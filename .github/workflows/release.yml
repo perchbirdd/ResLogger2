@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./ResLogger2/bin/Release/ResLogger2/*
+            ./ResLogger2.Plugin/bin/Release/ResLogger2.Plugin/*
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -46,6 +46,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./ResLogger2/bin/Release/ResLogger2/latest.zip
+          asset_path: ./ResLogger2.Plugin/bin/Release/ResLogger2.Plugin/latest.zip
           asset_name: ResLogger2.zip
           asset_content_type: application/zip

@@ -28,4 +28,4 @@ jobs:
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./ResLogger2/bin/Release/ResLogger2/*
+            ./ResLogger2.Plugin/bin/Release/ResLogger2.Plugin/*
