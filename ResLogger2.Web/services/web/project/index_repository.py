@@ -131,3 +131,4 @@ class IndexRepository:
         if index_id in self.indexes:
             if full_hash in self.indexes[index_id]:
                 return ExistsResult(index_id, path, full_hash, True)
+        return ExistsResult(full_exists=False)

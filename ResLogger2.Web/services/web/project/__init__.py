@@ -42,14 +42,12 @@ def upload():
         print(e)
         return Response(status=415)
 
-    print(f"received data!")
-
     files_in_request = 0
     files_that_exist = 0
     for txt in cache['Entries']:
         files_in_request = files_in_request + 1
         result = index_repo.exists(txt)
-        if result is not None:
+        if result.full_exists:
             files_that_exist = files_that_exist + 1
             stmt = insert(Path)\
                 .values(hash=result.full_hash, path=txt, index=result.index_id)\

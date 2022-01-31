@@ -7,8 +7,8 @@ bin/
 *prod*
 *.index
 *.index2
-*.sh
 ignore.txt
+ResLogger2.Web/*.sh
 ResLogger2.Web/services/certbot/
 ResLogger2.Web/services/nginx/
 ResLogger2.Web/services/persistence/

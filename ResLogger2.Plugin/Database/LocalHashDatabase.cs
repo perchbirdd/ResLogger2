@@ -137,7 +137,7 @@ public class LocalHashDatabase
             try
             {
                 using var cmd = _connection.CreateCommand();
-                cmd.CommandText = @"SELECT path FROM fullpaths WHERE fullpaths.uploaded = 0 LIMIT 1000";
+                cmd.CommandText = @"SELECT path FROM fullpaths WHERE fullpaths.uploaded = 0 LIMIT 500";
                 using var reader = cmd.ExecuteReader();
 
                 while (reader.Read())

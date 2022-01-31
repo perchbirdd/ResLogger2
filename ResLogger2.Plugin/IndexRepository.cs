@@ -55,10 +55,9 @@ namespace ResLogger2.Plugin
                 br.BaseStream.Seek(4, SeekOrigin.Current);
             }
 
-            PluginLog.Information($"Loaded index2 {indexId} {indexId:x6} with {hashCount} hashes");
+            PluginLog.Verbose($"Loaded index2 {indexId} {indexId:x6} with {hashCount} hashes");
         }
 
-        // This code has been adapted to C# from FFXIV itself :)
         private uint GetCategoryIdForPath(string gamePath)
         {
             return gamePath switch
@@ -82,7 +81,6 @@ namespace ResLogger2.Plugin
             };
         }
 
-        // This code has been adapted to C# from FFXIV itself :)
         private uint GetBgSubCategoryId(string gamePath)
         {
             var segmentIdIndex = 3;
@@ -115,7 +113,6 @@ namespace ResLogger2.Plugin
             return expacId + segmentId;
         }
 
-        // This code has been adapted to C# from FFXIV itself :)
         private uint GetNonBgSubCategoryId(string gamePath, int firstDirLen)
         {
             if (gamePath[firstDirLen] != 'e')

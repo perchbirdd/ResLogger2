@@ -77,7 +77,7 @@ public class HashUploader : IDisposable
                 return;
             }
                 
-            PluginLog.Information($"[Upload] Data has {data.Entries.Count} index2s.");
+            PluginLog.Verbose($"[Upload] Data has {data.Entries.Count} index2s.");
             var text = JsonConvert.SerializeObject(data);
             var textCompressed = StringCompressor.CompressString(text);
             var content = new StringContent(textCompressed, Encoding.UTF8, "application/rl2");
@@ -87,12 +87,13 @@ public class HashUploader : IDisposable
             State.Count = -1;
             
             var response = await _client.PostAsync(Endpoint, content, _tokenSource.Token);
+            State.Response = response.StatusCode;
                 
-            PluginLog.Information($"result: {response.StatusCode}");
+            PluginLog.Verbose($"result: {response.StatusCode}");
 
             if (response.StatusCode == HttpStatusCode.Accepted)
             {
-                PluginLog.Information("[Upload] Status was accepted, setting data as uploaded.");
+                PluginLog.Verbose("[Upload] Status was accepted, setting data as uploaded.");
                 _db.SetUploaded(data);
                 State.UploadStatus = UploadState.Status.Success;
                 State.Response = response.StatusCode;
@@ -106,7 +107,6 @@ public class HashUploader : IDisposable
         }, _tokenSource.Token).ContinueWith(task =>
         {
             _lastException = task.Exception;
-            LogUploadExceptions();
             
             // If this is still "Uploading", then we never even managed to connect to the server
             State.UploadStatus = State.UploadStatus == UploadState.Status.Uploading

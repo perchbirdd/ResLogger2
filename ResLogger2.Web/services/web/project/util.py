@@ -9,7 +9,7 @@ schema = json.loads('{"$schema":"http://json-schema.org/draft-04/schema#","type"
 
 def decompress(content: str) -> str:
     unb = base64.b64decode(content)
-    unc = gzip.decompress(unb[4:])
+    unc = gzip.decompress(unb)
     und = unc.decode(encoding="utf8")
     return und
 
