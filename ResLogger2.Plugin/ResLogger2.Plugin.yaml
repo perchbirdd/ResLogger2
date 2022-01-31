@@ -1,6 +1,7 @@
 name: ResLogger2
 internal_name: ResLogger2
 author: perchbird
+load_priority: 69421
 description: |-
   A path logger with optional crowdsourcing functionality.
 repo_url: https://github.com/lmcintyre/reslogger2

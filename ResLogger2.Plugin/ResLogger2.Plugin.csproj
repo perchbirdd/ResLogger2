@@ -26,6 +26,23 @@
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
 
+  <Target Name="PruneRuntimes" AfterTargets="Build">
+    <Exec Command="rd /s /q $(TargetDir)runtimes\alpine-x64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-arm" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-arm64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-armel" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-mips64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-musl-x64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-s390x" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-x64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\linux-x86" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\osx-arm64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\osx-x64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\win-arm" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\win-arm64" />
+    <Exec Command="rd /s /q $(TargetDir)runtimes\win-x86" />
+  </Target>
+
   <ItemGroup>
     <Reference Include="Dalamud">
       <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
