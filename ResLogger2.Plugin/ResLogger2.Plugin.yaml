@@ -1,7 +1,7 @@
 name: ResLogger2.Plugin
 internal_name: ResLogger2.Plugin
 author: perchbird
-load_priority: 69421
+load_priority: 1
 description: |-
   A path logger with optional crowdsourcing functionality.
 repo_url: https://github.com/lmcintyre/reslogger2
