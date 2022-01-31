@@ -18,7 +18,7 @@ namespace ResLogger2.Plugin;
 
 public class ResLogger2 : IDalamudPlugin
 {
-    public string Name => "ResLogger2";
+    public string Name => "ResLogger2.Plugin";
 
     private const string CommandName = "/reslog";
     private const int HookHitsTillCommit = 10000;
@@ -148,23 +148,25 @@ public class ResLogger2 : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        var entry = new XivChatEntry();
-            
-        switch (args)
-        {
-            case "log":
-                LogWindow.Toggle();
-                break;
-            case { } s when s.StartsWith("crc"):
-                var arg = args.Split(' ')[1];
-                var hash = Lumina.Misc.Crc32.Get(arg);
-                entry.Message.Append(new TextPayload($"{arg}: {hash} (0x{hash:X})"));
-                ChatGui.PrintChat(entry);    
-                break;
-            default:
-                entry.Message.Append(new TextPayload($"[{command}] [{args}]"));
-                ChatGui.PrintChat(entry);
-                break;
-        }
+        LogWindow.Toggle();
+        
+        // var entry = new XivChatEntry();
+        //     
+        // switch (args)
+        // {
+        //     case "log":
+        //         LogWindow.Toggle();
+        //         break;
+        //     case { } s when s.StartsWith("crc"):
+        //         var arg = args.Split(' ')[1];
+        //         var hash = Lumina.Misc.Crc32.Get(arg);
+        //         entry.Message.Append(new TextPayload($"{arg}: {hash} (0x{hash:X})"));
+        //         ChatGui.PrintChat(entry);    
+        //         break;
+        //     default:
+        //         entry.Message.Append(new TextPayload($"[{command}] [{args}]"));
+        //         ChatGui.PrintChat(entry);
+        //         break;
+        // }
     }
 }

@@ -1,5 +1,5 @@
-name: ResLogger2
-internal_name: ResLogger2
+name: ResLogger2.Plugin
+internal_name: ResLogger2.Plugin
 author: perchbird
 load_priority: 69421
 description: |-
