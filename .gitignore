@@ -1,0 +1,15 @@
+.vs/
+obj/
+bin/
+*.user
+.idea/
+*.pyc
+*prod*
+*.index
+*.index2
+*.sh
+ignore.txt
+*.sh
+services/certbot/
+services/nginx/
+services/persistence/
