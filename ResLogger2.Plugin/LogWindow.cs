@@ -309,6 +309,8 @@ public class LogWindow : Window
 
     private void AddAndFilter(ExistsResult info, HookType level)
     {
+        if (!info.FullExists) return;
+        
         if (!_entries.TryGetValue(info.FullHash, out var entry))
         {
             entry = new LogEntry(info, level);
