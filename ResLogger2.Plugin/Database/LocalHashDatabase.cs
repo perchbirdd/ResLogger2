@@ -13,7 +13,7 @@ namespace ResLogger2.Plugin.Database;
 
 public class LocalHashDatabase
 {
-    private const int Version = 1;
+    private const int Version = 2;
 
     private readonly string _hashDbPath;
     private readonly SqliteConnection _connection;
@@ -32,7 +32,7 @@ public class LocalHashDatabase
         _factory = new TaskFactory(_scheduler);
         _tokenSource = new CancellationTokenSource();
 
-        CreateIfNotExists();
+        CreateOrDoMigrations();
         _connection = new SqliteConnection($@"Data Source={_hashDbPath}");
         _connection.Open();
         Initialize();
@@ -53,7 +53,7 @@ public class LocalHashDatabase
     {
         var s = Stopwatch.StartNew();
         using var command = _connection.CreateCommand();
-        command.CommandText = @"SELECT hash, path, `index` FROM fullpaths";
+        command.CommandText = @"SELECT hash, `index`, path FROM fullpaths";
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
@@ -92,10 +92,40 @@ public class LocalHashDatabase
         AddFullPath(result);
     }
 
-    private void CreateIfNotExists()
+    private void CreateOrDoMigrations()
     {
         if (File.Exists(_hashDbPath))
+        {
+            long version = 0;
+
+            {
+                using var checkConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
+                checkConnection.Open();
+                using var checkCommand = checkConnection.CreateCommand();
+                checkCommand.CommandText = @"SELECT value FROM dbinfo WHERE type = 'version'";
+                using var checkReader = checkCommand.ExecuteReader();
+                if (checkReader.Read())
+                {
+                    version = checkReader.GetInt64(0);
+                    if (version == Version)
+                        return;
+                }    
+            }
+            SqliteConnection.ClearAllPools();
+            GC.WaitForPendingFinalizers();
+
+            PluginLog.Debug($"Attempting to migrate {version} to {Version}");
+            switch (version)
+            {
+                case 1:
+                    Migrate1To2();
+                    break;
+                default:
+                    throw new Exception("Unknown database version.");
+            }
+
             return;
+        }
 
         using var connection = new SqliteConnection($@"Data Source={_hashDbPath}");
         connection.Open();
@@ -225,10 +255,10 @@ public class LocalHashDatabase
             
             index.TryAdd(result.FullHash, result.FullText);
             using var command = _connection.CreateCommand();
-            command.CommandText = @"INSERT OR IGNORE INTO fullpaths values(@Hash, @Path, @Index, 0)";
+            command.CommandText = @"INSERT OR IGNORE INTO fullpaths values(@Hash, @Index, @Path, 0)";
             command.Parameters.AddWithValue("@Hash", result.FullHash);
-            command.Parameters.AddWithValue("@Path", result.FullText);
             command.Parameters.AddWithValue("@Index", result.IndexId);
+            command.Parameters.AddWithValue("@Path", result.FullText);
             command.ExecuteNonQuery();
         }, _tokenSource.Token);
     }
@@ -241,6 +271,13 @@ public class LocalHashDatabase
             paths.AddRange(index.Value.Values);
         File.WriteAllLines(path, paths);
         return File.Exists(path);
+    }
+
+    private void Migrate1To2()
+    {
+        Dispose();
+        File.Delete(_hashDbPath);
+        CreateOrDoMigrations();
     }
 
     // public string GetFullPath(uint fullHash)

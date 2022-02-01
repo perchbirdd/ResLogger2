@@ -310,15 +310,15 @@ public class LogWindow : Window
     private void AddAndFilter(ExistsResult info, HookType level)
     {
         if (!info.FullExists) return;
-        
-        if (!_entries.TryGetValue(info.FullHash, out var entry))
-        {
-            entry = new LogEntry(info, level);
-            _entries.Add(info.FullHash, entry);
-        }
-        
+
         lock (_renderLock)
         {
+            if (!_entries.TryGetValue(info.FullHash, out var entry))
+            {
+                entry = new LogEntry(info, level);
+                _entries.Add(info.FullHash, entry);
+            }
+            
             _logText.Add(info.FullHash);
             _uniqueLogText.Add(info.FullHash);
 
