@@ -44,6 +44,7 @@ def upload():
 
     files_in_request = 0
     files_that_exist = 0
+    files_that_are_new = 0
     for txt in cache['Entries']:
         files_in_request = files_in_request + 1
         result = index_repo.exists(txt)
@@ -52,14 +53,12 @@ def upload():
             stmt = insert(Path)\
                 .values(hash=result.full_hash, path=txt, index=result.index_id)\
                 .on_conflict_do_nothing()
-            db.session.connection().execute(stmt)
+            result = db.session.connection().execute(stmt)
+            files_that_are_new = files_that_are_new + result.rowcount
         else:
-            print(f"does not exist? ({txt})")
-    print(f"of {files_in_request} paths, {files_that_exist} exist!")
+            print(f"nonexistent: '{txt}'")
+    print(f"{files_in_request:03} paths, {files_that_exist:03} exist, {files_that_are_new:03} new ({(time.time_ns() - start) / 1000000:.2f}ms)")
     db.session.commit()
-    end = time.time_ns()
-    print(f"request took {(end - start) / 1000000} ms")
-
     return Response(status=202)
 
 

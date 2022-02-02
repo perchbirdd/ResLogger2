@@ -10,6 +10,7 @@ namespace ResLogger2.Plugin
     public class IndexValidator
     {
         private readonly Dictionary<uint, HashSet<uint>> _indexes = new();
+        private uint _indexCount;
 
         public IndexValidator(string gamePath)
         {
@@ -31,6 +32,7 @@ namespace ResLogger2.Plugin
 
             foreach (var index in indexes)
                 ReadIndex(index);
+            PluginLog.Verbose($"Loaded {_indexCount} full hashes");
         }
 
         private void ReadIndex(string path)
@@ -56,6 +58,7 @@ namespace ResLogger2.Plugin
             }
 
             PluginLog.Verbose($"Loaded index2 {indexId} {indexId:x6} with {hashCount} hashes");
+            _indexCount += hashCount;
         }
 
         private uint GetCategoryIdForPath(string gamePath)
