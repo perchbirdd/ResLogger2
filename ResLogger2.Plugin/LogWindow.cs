@@ -193,18 +193,18 @@ public class LogWindow : Window
                     case UploadState.Status.Idle:
                         ImGui.BeginMenu("Upload Status: Idle...");
                         break;
+                    case UploadState.Status.Uploading:
+                        ImGui.BeginMenu("Upload Status: Uploading...");
+                        break;
                     case UploadState.Status.Success:
                         ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.HealerGreen);
                         ImGui.BeginMenu($"Last upload: Success ({state.Response}) ({state.Count} paths)", false);
                         ImGui.PopStyleColor();
                         break;
                     case UploadState.Status.FaultedLocally:
-                        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-                        if (ImGui.BeginMenu("Last upload: Faulted Locally"))
-                        {
-                            _uploader.LogUploadExceptions();
-                            ImGui.EndMenu();
-                        }
+                        ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.DalamudRed);
+                        ImGui.BeginMenu("Last upload: Faulted Locally", false);
+                        var log = ImGui.IsItemClicked(ImGuiMouseButton.Left);
                         ImGui.PopStyleColor();
                         if (ImGui.IsItemHovered())
                         {
@@ -212,6 +212,8 @@ public class LogWindow : Window
                             ImGui.Text("Click to log last exception to the Plugin Log for troubleshooting.");
                             ImGui.EndTooltip();
                         }
+                        if (log)
+                            _uploader.LogUploadExceptions();
                         break;
                     case UploadState.Status.FaultedRemotely:
                         ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.DalamudRed);

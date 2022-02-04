@@ -14,7 +14,7 @@ namespace ResLogger2.Plugin;
 
 public class HashUploader : IDisposable
 {
-    private const string Endpoint = "https://rl2.perchbird.dev:9072/upload";
+    private const string Endpoint = "https://rl2.perchbird.dev/upload";
     // private const string Endpoint = "http://127.0.0.1:5000/upload";
 
     private readonly ElapsedEventHandler _uploadDelegate;
