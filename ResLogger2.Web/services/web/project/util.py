@@ -1,6 +1,8 @@
 import base64
 import gzip
 import json
+import re
+
 import jsonschema
 
 schema = json.loads('{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"Entries":{'
@@ -21,6 +23,11 @@ def validate_json_schema(json_data: str) -> bool:
     except jsonschema.exceptions.ValidationError as e:
         print("JSON Schema validation error: " + str(e))
         return False
+
+
+def get_gamever_from_path(path: str) -> str:
+    result = re.search("\d{4}\.\d{2}\.\d{2}\.\d{4}\.\d{4}", path)
+    return result.group()
 
 
 table = [0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3, 0x0EDB8832,
@@ -74,3 +81,85 @@ def crc32(text_str: str) -> int:
     elif a < -2147483648:
         return a + 2 ** 32
     return a
+
+
+def hash_path(path: str) -> dict:
+    if "/" not in path:
+        return None
+    slash_index = path.rindex("/")
+    folder = path[:slash_index]
+    file = path[slash_index+1:]
+    folder_hash = crc32(folder)
+    file_hash = crc32(file)
+    full_hash = crc32(path)
+    index = get_category_id(path)
+    return {"path": path, "index": index, "folder": folder_hash, "file": file_hash, "full": full_hash}
+
+
+def get_bg_subcategory_id(path: str) -> int:
+    segment_id_index = 3
+
+    if path[3] != "e":
+        return 0
+
+    if path[6] == "/":
+        expac_id = int(path[5:6]) << 8
+        segment_id_index = 7
+    elif path[7] == "/":
+        expac_id = int(path[5:7]) << 8
+        segment_id_index = 8
+    else:
+        expac_id = 0
+
+    segment_id_str = path[segment_id_index:segment_id_index + 2]
+    segment_id = int(segment_id_str)
+    return expac_id | segment_id
+
+
+def get_non_bg_subcategory_id(path: str, first_dir_len: int) -> int:
+    if path[first_dir_len] != "e":
+        return 0
+
+    if path[first_dir_len + 3] == "/":
+        return int(path[first_dir_len + 2:first_dir_len + 3]) << 8
+
+    if path[first_dir_len + 4] == "/":
+        return int(path[first_dir_len + 2:first_dir_len + 4]) << 8
+
+    return 0
+
+
+def get_category_id(path: str) -> int:
+    if path.startswith("com"):
+        return 0x000000
+    elif path.startswith("bgc"):
+        return 0x010000
+    elif path.startswith("bg/"):
+        return get_bg_subcategory_id(path) | (0x2 << 16)
+    elif path.startswith("cut"):
+        return get_non_bg_subcategory_id(path, 4) | (0x3 << 16)
+    elif path.startswith("cha"):
+        return 0x040000
+    elif path.startswith("sha"):
+        return 0x050000
+    elif path.startswith("ui/"):
+        return 0x060000
+    elif path.startswith("sou"):
+        return 0x070000
+    elif path.startswith("vfx"):
+        return 0x080000
+    elif path.startswith("ui_"):
+        return 0x090000
+    elif path.startswith("exd"):
+        return 0x0A0000
+    elif path.startswith("gam"):
+        return 0x0B0000
+    elif path.startswith("mus"):
+        return get_non_bg_subcategory_id(path, 6) | (0x0C << 16)
+    elif path.startswith("_sq"):
+        return 0x110000
+    elif path.startswith("_de"):
+        return 0x120000
+    else:
+        return 0
+
