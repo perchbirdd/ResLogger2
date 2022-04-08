@@ -9,6 +9,34 @@ schema = json.loads('{"$schema":"http://json-schema.org/draft-04/schema#","type"
                     '"type":"array","items":{"type":"string"}}},"required":["Entries"]}')
 
 
+class HashResult:
+    path: str = None
+    index_id: int = None
+    file: int = None
+    folder: int = None
+    full: int = None
+
+    def __init__(self, path: str, index_id: int, folder: int, file: int, full: int):
+        self.path = path
+        self.index_id = index_id
+        self.folder = folder
+        self.file = file
+        self.full = full
+
+
+def hash_path(path: str) -> HashResult:
+    if "/" not in path:
+        return None
+    slash_index = path.rindex("/")
+    folder = path[:slash_index]
+    file = path[slash_index + 1:]
+    folder_hash = crc32(folder)
+    file_hash = crc32(file)
+    full_hash = crc32(path)
+    index = get_category_id(path)
+    return HashResult(path, index, folder_hash, file_hash, full_hash)
+
+
 def decompress(content: str) -> str:
     unb = base64.b64decode(content)
     unc = gzip.decompress(unb)
@@ -81,20 +109,6 @@ def crc32(text_str: str) -> int:
     elif a < -2147483648:
         return a + 2 ** 32
     return a
-
-
-def hash_path(path: str) -> dict:
-    if "/" not in path:
-        return None
-    slash_index = path.rindex("/")
-    folder = path[:slash_index]
-    file = path[slash_index+1:]
-    folder_hash = crc32(folder)
-    file_hash = crc32(file)
-    full_hash = crc32(path)
-    index = get_category_id(path)
-    return {"path": path, "index": index, "folder": folder_hash, "file": file_hash, "full": full_hash}
-
 
 def get_bg_subcategory_id(path: str) -> int:
     segment_id_index = 3

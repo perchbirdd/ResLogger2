@@ -29,12 +29,12 @@ class IndexProcessor:
             index_path_set.add(add_element)
 
         # Force some semblance of consistency
-        index_path_sorted = sorted(index_path_set)
+        # index_path_sorted = sorted(index_path_set)
+        index_path_sorted = index_path_set
         for index_path in index_path_sorted:
             # We don't care what index file we got, we should assume it exists
             result = self.read_index(index_path)
             result = self.read_index(f"{index_path}2", result)
-            result.postprocess()
             yield result
 
     def read_index(self, index_path: str, parse_progress: IndexParseResult = None) -> IndexParseResult:
