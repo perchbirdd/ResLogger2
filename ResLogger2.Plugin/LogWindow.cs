@@ -6,11 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using ImGuiNET;
-using ResLogger2.Plugin.Database;
 
 namespace ResLogger2.Plugin;
 
@@ -27,31 +27,25 @@ public class LogWindow : Window
     private HookType _levelFilter = HookType.None;
     private bool _isFiltered;
 
-    private readonly UiBuilder _uiBuilder;
-    private readonly Configuration _config;
-    private readonly LocalHashDatabase _db;
-    private readonly HashUploader _uploader;
+    private readonly FileDialogManager _fileDialogManager = new();
+    private bool _isImporting;
+
+    private readonly ResLogger2 _plugin;
 
     private ICollection<uint> Source
     {
         get
         {
-            if (_config.OnlyDisplayUnique && _isFiltered) return _filteredUniqueLogText;
-            if (_config.OnlyDisplayUnique && !_isFiltered) return _uniqueLogText;
-            if (!_config.OnlyDisplayUnique && _isFiltered) return _filteredLogText;
+            if (_plugin.Configuration.OnlyDisplayUnique && _isFiltered) return _filteredUniqueLogText;
+            if (_plugin.Configuration.OnlyDisplayUnique && !_isFiltered) return _uniqueLogText;
+            if (!_plugin.Configuration.OnlyDisplayUnique && _isFiltered) return _filteredLogText;
             return _logText;
         }
     }
 
-    public LogWindow(UiBuilder uiBuilder,
-        Configuration config,
-        LocalHashDatabase db,
-        HashUploader uploader) : base("ResLogger2", ImGuiWindowFlags.MenuBar)
+    public LogWindow(ResLogger2 plugin) : base("ResLogger2", ImGuiWindowFlags.MenuBar)
     {
-        _uiBuilder = uiBuilder;
-        _config = config;
-        _db = db;
-        _uploader = uploader;
+        _plugin = plugin;
 
         Size = new Vector2(500, 400);
         SizeCondition = ImGuiCond.FirstUseEver;
@@ -98,6 +92,7 @@ public class LogWindow : Window
     {
         DrawMenuBar();
         DrawLogPane();
+        _fileDialogManager.Draw();
     }
 
     private void DrawMenuBar()
@@ -110,11 +105,18 @@ public class LogWindow : Window
                 {
                     Task.Run(() =>
                     {
-                        var result = _db.ExportFileList();
+                        var result = _plugin.Database.ExportFileList();
                         if (result)
-                            _uiBuilder.AddNotification("Exported path list.", "Export Complete", NotificationType.Success);
+                            ResLogger2.PluginInterface.UiBuilder.AddNotification("Exported path list.", "Export Complete", NotificationType.Success);
                         else
-                            _uiBuilder.AddNotification("An error occurred while exporting path list.", "Export Failed", NotificationType.Error);
+                            ResLogger2.PluginInterface.UiBuilder.AddNotification("An error occurred while exporting path list.", "Export Failed", NotificationType.Error);
+                    });
+                }
+                if (ImGui.MenuItem("Import path list to database"))
+                {
+                    _fileDialogManager.OpenFileDialog("Import path list", ".*", (b, s) =>
+                    {
+                        Task.Run(() => _plugin.HandleImport(b, s));    
                     });
                 }
                 ImGui.EndMenu();
@@ -141,33 +143,33 @@ public class LogWindow : Window
 
             if (ImGui.BeginMenu("Settings"))
             {
-                var upload = _config.Upload;
-                var autoScroll = _config.AutoScroll;
-                var onlyDisplayUnique = _config.OnlyDisplayUnique;
-                var openAtStartup = _config.OpenAtStartup;
+                var upload = _plugin.Configuration.Upload;
+                var autoScroll = _plugin.Configuration.AutoScroll;
+                var onlyDisplayUnique = _plugin.Configuration.OnlyDisplayUnique;
+                var openAtStartup = _plugin.Configuration.OpenAtStartup;
 
                 if (ImGui.MenuItem("Upload paths", "", ref upload))
                 {
-                    _config.Upload = upload;
-                    _config.Save();
+                    _plugin.Configuration.Upload = upload;
+                    _plugin.Configuration.Save();
                 }
 
                 if (ImGui.MenuItem("Auto-scroll", "", ref autoScroll))
                 {
-                    _config.AutoScroll = autoScroll;
-                    _config.Save();
+                    _plugin.Configuration.AutoScroll = autoScroll;
+                    _plugin.Configuration.Save();
                 }
                 
                 if (ImGui.MenuItem("Log unique paths only", "", ref onlyDisplayUnique))
                 {
-                    _config.OnlyDisplayUnique = onlyDisplayUnique;
-                    _config.Save();
+                    _plugin.Configuration.OnlyDisplayUnique = onlyDisplayUnique;
+                    _plugin.Configuration.Save();
                 }
 
                 if (ImGui.MenuItem("Open at startup", "", ref openAtStartup))
                 {
-                    _config.OpenAtStartup = openAtStartup;
-                    _config.Save();
+                    _plugin.Configuration.OpenAtStartup = openAtStartup;
+                    _plugin.Configuration.Save();
                 }
 
                 ImGui.EndMenu();
@@ -176,17 +178,21 @@ public class LogWindow : Window
             #if DEBUG
             if (ImGui.BeginMenu("Debug"))
             {
-                if (ImGui.MenuItem("Reset Uploaded"))
+                if (ImGui.MenuItem("Set none uploaded"))
                 {
-                    _db.ResetUploaded();
+                    _plugin.Database.SetNoneUploaded();
+                }
+                if (ImGui.MenuItem("Set all uploaded"))
+                {
+                    _plugin.Database.SetAllUploaded();
                 }
                 ImGui.EndMenu();
             }
             #endif
             
-            if (_config.Upload)
+            if (_plugin.Configuration.Upload)
             {
-                var state = _uploader.State;
+                var state = _plugin.Uploader.State;
 
                 switch (state.UploadStatus)
                 {
@@ -213,7 +219,7 @@ public class LogWindow : Window
                             ImGui.EndTooltip();
                         }
                         if (log)
-                            _uploader.LogUploadExceptions();
+                            _plugin.Uploader.LogUploadExceptions();
                         break;
                     case UploadState.Status.FaultedRemotely:
                         ImGui.PushStyleColor(ImGuiCol.TextDisabled, ImGuiColors.DalamudRed);
@@ -297,7 +303,7 @@ public class LogWindow : Window
         ImGui.PopFont();
         ImGui.PopStyleVar();
 
-        if (_config.AutoScroll && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
+        if (_plugin.Configuration.AutoScroll && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
         {
             ImGui.SetScrollHereY(1.0f);
         }

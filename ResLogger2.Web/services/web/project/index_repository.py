@@ -1,6 +1,7 @@
 import glob
 import os
 import struct
+from typing import Dict
 
 from .exists_result import ExistsResult
 from .util import crc32
@@ -124,6 +125,12 @@ class IndexRepository:
             return int(path[first_dir_len + 2:first_dir_len + 4]) << 8
 
         return 0
+
+    def get_index_counts(self) -> Dict[int, int]:
+        counts = {}
+        for index_id, hashes in self.indexes.items():
+            counts[index_id] = len(hashes)
+        return counts
 
     def exists(self, path: str) -> ExistsResult:
         index_id = self.get_category_id(path)

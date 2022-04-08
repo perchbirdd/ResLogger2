@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game;
 using Dalamud.Game.Gui;
-using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
@@ -19,6 +17,14 @@ namespace ResLogger2.Plugin;
 public class ResLogger2 : IDalamudPlugin
 {
     public string Name => "ResLogger2.Plugin";
+    
+    public static DalamudPluginInterface PluginInterface { get; set; }
+    public static CommandManager CommandManager { get; set; }
+    public static ChatGui ChatGui { get; set; }
+    public Configuration Configuration { get; init; }
+    public IndexValidator Validator { get; }
+    public LocalHashDatabase Database { get; }
+    public HashUploader Uploader { get; }
 
     private const string CommandName = "/reslog";
     private const int HookHitsTillCommit = 10000;
@@ -27,18 +33,10 @@ public class ResLogger2 : IDalamudPlugin
     private delegate IntPtr GetResourceAsyncPrototype(IntPtr manager, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6, byte a7);
     private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook;
     private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook;
-
-    private readonly IndexValidator _validator;
-    private readonly LocalHashDatabase _database;
-    private readonly HashUploader _uploader;
+    
     private int _hookHits;
 
-    private static DalamudPluginInterface PluginInterface { get; set; }
-    private static CommandManager CommandManager { get; set; }
-    private static ChatGui ChatGui { get; set; }
-
     private WindowSystem ResLogWindows { get; init; }
-    private Configuration Configuration { get; init; }
     private LogWindow LogWindow { get; init; }
 
     public ResLogger2(
@@ -64,9 +62,9 @@ public class ResLogger2 : IDalamudPlugin
 
         try
         {
-            _validator = new IndexValidator();
-            _database = new LocalHashDatabase(loc);
-            _uploader = new HashUploader(_database, Configuration);
+            Validator = new IndexValidator();
+            Database = new LocalHashDatabase(loc);
+            Uploader = new HashUploader(this);
         }
         catch (Exception e)
         {
@@ -76,7 +74,7 @@ public class ResLogger2 : IDalamudPlugin
         }
         
         ResLogWindows = new WindowSystem();
-        LogWindow = new LogWindow(PluginInterface.UiBuilder, Configuration, _database, _uploader)
+        LogWindow = new LogWindow(this)
         {
             IsOpen = Configuration.OpenAtStartup
         };
@@ -115,14 +113,14 @@ public class ResLogger2 : IDalamudPlugin
             if (string.IsNullOrEmpty(path)) return;
             if (!IsAscii(path)) return;
 
-            var result = _validator.Exists(path);
+            var result = Validator.Exists(path);
             LogWindow.HandleLogLine(result, type);
-            _database.AddPath(result);
+            Database.AddPath(result);
 
             if (_hookHits <= HookHitsTillCommit) return;
             
             _hookHits = 0;
-            _database.SubmitRestartTransaction();
+            Database.SubmitRestartTransaction();
         }
         catch (Exception e)
         {
@@ -141,32 +139,37 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceSyncHook?.Dispose();
         _getResourceAsyncHook?.Disable();
         _getResourceAsyncHook?.Dispose();
-        _uploader?.Dispose();
-        _database?.Dispose();
+        Uploader?.Dispose();
+        Database?.Dispose();
         CommandManager.RemoveHandler(CommandName);
     }
 
     private void OnCommand(string command, string args)
     {
         LogWindow.Toggle();
-        
-        // var entry = new XivChatEntry();
-        //     
-        // switch (args)
-        // {
-        //     case "log":
-        //         LogWindow.Toggle();
-        //         break;
-        //     case { } s when s.StartsWith("crc"):
-        //         var arg = args.Split(' ')[1];
-        //         var hash = Lumina.Misc.Crc32.Get(arg);
-        //         entry.Message.Append(new TextPayload($"{arg}: {hash} (0x{hash:X})"));
-        //         ChatGui.PrintChat(entry);    
-        //         break;
-        //     default:
-        //         entry.Message.Append(new TextPayload($"[{command}] [{args}]"));
-        //         ChatGui.PrintChat(entry);
-        //         break;
-        // }
+    }
+
+    public void HandleImport(bool isOk, string result)
+    {
+        if (!isOk) return;
+        if (!File.Exists(result)) return;
+        try
+        {
+            var paths = File.ReadAllLines(result);
+            foreach (var path in paths)
+            {
+                var exists = Validator.Exists(path);
+                if (!exists.FullExists)
+                    PluginLog.Debug($"{exists}");
+                if (exists.FullExists)
+                {
+                    Database.AddPath(exists);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            PluginLog.Error(e, "An error occurred in ResLogger2.");
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using Dalamud.Logging;
 using Newtonsoft.Json;
-using ResLogger2.Plugin.Database;
 using Timer = System.Timers.Timer;
 
 namespace ResLogger2.Plugin;
@@ -17,10 +16,9 @@ public class HashUploader : IDisposable
     private const string Endpoint = "https://rl2.perchbird.dev/upload";
     // private const string Endpoint = "http://127.0.0.1:5000/upload";
 
+    private readonly ResLogger2 _plugin;
     private readonly ElapsedEventHandler _uploadDelegate;
     private readonly CancellationTokenSource _tokenSource;
-    private readonly LocalHashDatabase _db;
-    private readonly Configuration _config;
     private readonly HttpClient _client;
     private readonly Timer _timer;
     private AggregateException _lastException;
@@ -28,10 +26,9 @@ public class HashUploader : IDisposable
     
     public UploadState State { get; init; }
 
-    public HashUploader(LocalHashDatabase db, Configuration config)
+    public HashUploader(ResLogger2 plugin)
     {
-        _db = db;
-        _config = config;
+        _plugin = plugin;
 
         State = new UploadState
         {
@@ -49,7 +46,7 @@ public class HashUploader : IDisposable
         _uploadDelegate = (_, _) => Upload();
         _tokenSource = new CancellationTokenSource();
 
-        _timer.Interval = 10000;
+        _timer.Interval = 5000;
         _timer.Elapsed += _uploadDelegate;
         _timer.Start();
     }
@@ -65,12 +62,12 @@ public class HashUploader : IDisposable
 
     private void Upload()
     {
-        if (_isUploading || !_config.Upload) return;
+        if (_isUploading || !_plugin.Configuration.Upload) return;
             
         _isUploading = true;
 
         Task.Run(async () => {
-            var data = await _db.GetUploadableData();
+            var data = await _plugin.Database.GetUploadableData();
             if (data.Entries.Count == 0)
             {
                 _isUploading = false;
@@ -94,7 +91,7 @@ public class HashUploader : IDisposable
             if (response.StatusCode == HttpStatusCode.Accepted)
             {
                 PluginLog.Verbose("[Upload] Status was accepted, setting data as uploaded.");
-                _db.SetUploaded(data);
+                _plugin.Database.SetUploaded(data);
                 State.UploadStatus = UploadState.Status.Success;
                 State.Response = response.StatusCode;
                 State.Count = data.Entries.Count;

@@ -67,3 +67,37 @@ def uploadcheck():
     global cache
     return jsonify(cache)
 
+
+def get_stats():
+    start = time.time_ns()
+    ret = {}
+    counts = index_repo.get_index_counts()
+
+    query = db.session.query(Path.index, func.count(Path.index)).group_by(Path.index).all()
+    query_results = {x[0]: x[1] for x in query}
+
+    for index_id, count in counts.items():
+        ret[index_id] = {}
+        ret[index_id]['total'] = count
+        ret[index_id]['found'] = query_results[index_id] if index_id in query_results else 0
+
+    flattened = []
+    for index_id in ret.keys():
+        value = ret[index_id]
+        value['id'] = index_id
+        flattened.append(value)
+
+    flattened.sort(key=lambda x: (x['found'] / x['total'] * 100) if x['total'] > 0 else 0, reverse=True)
+
+    print(f"stats took {(time.time_ns() - start) / 1000000:.2f}ms")
+    return flattened
+
+
+@app.route("/api/stats")
+def api_stats():
+    return jsonify(get_stats())
+
+
+@app.route("/stats")
+def stats():
+    return render_template("stats.html", data=get_stats())
