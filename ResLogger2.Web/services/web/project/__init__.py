@@ -1,7 +1,7 @@
 import json
 import time
 
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response#, render_template
 from sqlalchemy.dialects.postgresql import insert
 
 from .index_repository import IndexRepository
@@ -55,6 +55,8 @@ def upload():
                 .on_conflict_do_nothing()
             result = db.session.connection().execute(stmt)
             files_that_are_new = files_that_are_new + result.rowcount
+            if result.rowcount > 0:
+                print(f"new: '{txt}'")
         else:
             print(f"nonexistent: '{txt}'")
     print(f"{files_in_request:03} paths, {files_that_exist:03} exist, {files_that_are_new:03} new ({(time.time_ns() - start) / 1000000:.2f}ms)")
@@ -93,11 +95,12 @@ def get_stats():
     return flattened
 
 
-@app.route("/api/stats")
-def api_stats():
-    return jsonify(get_stats())
-
-
+# @app.route("/api/stats")
+# def api_stats():
+#     return jsonify(get_stats())
+#
+#
 @app.route("/stats")
 def stats():
-    return render_template("stats.html", data=get_stats())
+    # return render_template("stats.html", data=get_stats())
+    return "sorry stats is disabled because im bad at making databases"
