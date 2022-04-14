@@ -69,7 +69,7 @@
     <Content Include="ResLogger2.Plugin.yaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="2.1.5" />
+    <PackageReference Include="DalamudPackager" Version="2.1.6" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.1" />
   </ItemGroup>
   

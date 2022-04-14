@@ -178,13 +178,13 @@ public class LogWindow : Window
             #if DEBUG
             if (ImGui.BeginMenu("Debug"))
             {
-                if (ImGui.MenuItem("Set none uploaded"))
+                if (ImGui.MenuItem("Set none uploaded (DOES NOTHING)"))
                 {
-                    _plugin.Database.SetNoneUploaded();
+                    // _plugin.Database.SetNoneUploaded();
                 }
-                if (ImGui.MenuItem("Set all uploaded"))
+                if (ImGui.MenuItem("Set all uploaded (DOES NOTHING)"))
                 {
-                    _plugin.Database.SetAllUploaded();
+                    // _plugin.Database.SetAllUploaded();
                 }
                 ImGui.EndMenu();
             }
