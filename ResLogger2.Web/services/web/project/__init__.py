@@ -64,28 +64,28 @@ def upload():
         else:
             print(f"nonexistent: '{txt}'")
     pre = (time.perf_counter() - start) * 1000
-    start = time.perf_counter()
-    post = postprocess(post_processing)
-    p_files_in_request = 0
-    p_files_that_exist = 0
-    p_files_that_are_new = 0
-    for txt in post:
-        p_files_in_request = p_files_in_request + 1
-        result = index_repo.exists(txt)
-        if result.full_exists:
-            p_files_that_exist = p_files_that_exist + 1
-            stmt = insert(Path) \
-                .values(hash=result.full_hash, path=txt, index=result.index_id) \
-                .on_conflict_do_nothing()
-            result = db.session.connection().execute(stmt)
-            p_files_that_are_new = p_files_that_are_new + result.rowcount
-            if result.rowcount > 0:
-                print(f"[p] new: '{txt}'")
-        # else:
-        #     print(f"(p) nonexistent: '{txt}'")
-    post = (time.perf_counter() - start) * 1000
+    # start = time.perf_counter()
+    # post = postprocess(post_processing)
+    # p_files_in_request = 0
+    # p_files_that_exist = 0
+    # p_files_that_are_new = 0
+    # for txt in post:
+    #     p_files_in_request = p_files_in_request + 1
+    #     result = index_repo.exists(txt)
+    #     if result.full_exists:
+    #         p_files_that_exist = p_files_that_exist + 1
+    #         stmt = insert(Path) \
+    #             .values(hash=result.full_hash, path=txt, index=result.index_id) \
+    #             .on_conflict_do_nothing()
+    #         result = db.session.connection().execute(stmt)
+    #         p_files_that_are_new = p_files_that_are_new + result.rowcount
+    #         if result.rowcount > 0:
+    #             print(f"[p] new: '{txt}'")
+    #     # else:
+    #     #     print(f"(p) nonexistent: '{txt}'")
+    # post = (time.perf_counter() - start) * 1000
     print(f"    {files_in_request:03} paths, {files_that_exist:03} exist, {files_that_are_new:03} new ({pre:.2f}ms)")
-    print(f"[p] {p_files_in_request:03} paths, {p_files_that_exist:03} exist, {p_files_that_are_new:03} new ({post:.2f}ms)")
+    # print(f"[p] {p_files_in_request:03} paths, {p_files_that_exist:03} exist, {p_files_that_are_new:03} new ({post:.2f}ms)")
     db.session.commit()
     return Response(status=202)
 

@@ -16,6 +16,9 @@ public class HashUploader : IDisposable
     private const string Endpoint = "https://rl2.perchbird.dev/upload";
     // private const string Endpoint = "http://127.0.0.1:5000/upload";
 
+    private const int UploadInterval = 5000;
+    private const int UploadLimit = 1000;
+
     private readonly ResLogger2 _plugin;
     private readonly ElapsedEventHandler _uploadDelegate;
     private readonly CancellationTokenSource _tokenSource;
@@ -34,7 +37,7 @@ public class HashUploader : IDisposable
         {
             UploadStatus = UploadState.Status.Idle,
             Count = -1,
-            Response = HttpStatusCode.UnavailableForLegalReasons
+            Response = HttpStatusCode.UnavailableForLegalReasons,
         };
 
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
@@ -46,7 +49,7 @@ public class HashUploader : IDisposable
         _uploadDelegate = (_, _) => Upload();
         _tokenSource = new CancellationTokenSource();
 
-        _timer.Interval = 5000;
+        _timer.Interval = UploadInterval;
         _timer.Elapsed += _uploadDelegate;
         _timer.Start();
     }
@@ -67,7 +70,7 @@ public class HashUploader : IDisposable
         _isUploading = true;
 
         Task.Run(async () => {
-            var data = await _plugin.Database.GetUploadableData();
+            var data = await _plugin.Database.GetUploadableData(UploadLimit);
             if (data.Entries.Count == 0)
             {
                 _isUploading = false;

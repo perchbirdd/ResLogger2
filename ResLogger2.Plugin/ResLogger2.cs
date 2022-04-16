@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using Dalamud.IoC;
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game;
@@ -63,7 +64,7 @@ public class ResLogger2 : IDalamudPlugin
         try
         {
             Validator = new IndexValidator();
-            Database = new LocalHashDatabase(loc);
+            Database = new LocalHashDatabase(this, loc);
             Uploader = new HashUploader(this);
         }
         catch (Exception e)
@@ -108,8 +109,8 @@ public class ResLogger2 : IDalamudPlugin
         _hookHits++;
         try
         {
-            var path = Marshal.PtrToStringAnsi(pPath);
             if (pPath == IntPtr.Zero) return;
+            var path = Marshal.PtrToStringAnsi(pPath);
             if (string.IsNullOrEmpty(path)) return;
             if (!IsAscii(path)) return;
 
@@ -158,13 +159,14 @@ public class ResLogger2 : IDalamudPlugin
             var paths = File.ReadAllLines(result);
             foreach (var path in paths)
             {
-                var exists = Validator.Exists(path);
-                if (!exists.FullExists)
-                    PluginLog.Debug($"{exists}");
-                if (exists.FullExists)
-                {
-                    Database.AddPath(exists);
-                }
+                // var exists = Validator.Exists(path);
+                // if (!exists.FullExists)
+                //     PluginLog.Debug($"{exists}");
+                // if (exists.FullExists)
+                // {
+                //     Database.AddPath(exists);
+                // }
+                Database.AddPostProcessedPaths(path);
             }
         }
         catch (Exception e)
