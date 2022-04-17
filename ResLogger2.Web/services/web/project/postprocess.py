@@ -33,9 +33,9 @@ def postprocess_internal(paths: Set[str]) -> Set[str]:
     paths_staging = set()
     for path in paths:
         # Character IDs
-        if re.search(re_chara, path):
-            for chara_id in chara_ids:
-                paths_staging.add(re.sub(re_chara, chara_id + r"\1", path))
+        # if re.search(re_chara, path):
+        #     for chara_id in chara_ids:
+        #         paths_staging.add(re.sub(re_chara, chara_id + r"\1", path))
 
         # UI highres
         if path.startswith("ui/") and path.endswith("tex"):
@@ -45,17 +45,17 @@ def postprocess_internal(paths: Set[str]) -> Set[str]:
                 paths_staging.add(path.replace(".tex", "_hr1.tex"))
 
         # Localization
-        paths_staging.union(add_replacements(path, loc_ids))
-        paths_staging.union(add_replacements(path, tex_suffix))
-        paths_staging.union(add_replacements(path, equip_type))
-        paths_staging.union(add_replacements(path, acc_type))
+        # paths_staging.union(add_replacements(path, loc_ids))
+        # paths_staging.union(add_replacements(path, tex_suffix))
+        # paths_staging.union(add_replacements(path, equip_type))
+        # paths_staging.union(add_replacements(path, acc_type))
 
 
         # m/f voicelines
-        if gen_m in path:
-            paths_staging.add(path.replace(gen_m, gen_f))
-        elif gen_f in path:
-            paths_staging.add(path.replace(gen_f, gen_m))
+        # if gen_m in path:
+        #     paths_staging.add(path.replace(gen_m, gen_f))
+        # elif gen_f in path:
+        #     paths_staging.add(path.replace(gen_f, gen_m))
 
     return paths.union(paths_staging)
 
