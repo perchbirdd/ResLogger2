@@ -10,18 +10,18 @@
       },
       "Microsoft.Data.Sqlite": {
         "type": "Direct",
-        "requested": "[6.0.1, )",
-        "resolved": "6.0.1",
-        "contentHash": "PuH8SyfRgS19criO7/DnsMQZx0L915rl4mcMPtvIvCwQ1+V3HahBZl8VyGRK/N4tV399hkmNe7F+aCCdT2Ek8g==",
+        "requested": "[6.0.8, )",
+        "resolved": "6.0.8",
+        "contentHash": "oX2Ehhy1s/5CLaXRzajASHu2bAp87QrMqPzF3MjQlAm3alUwgmeIDdbm2Mp4i4BB2oxdujyeYCGcDnbew8mBdA==",
         "dependencies": {
-          "Microsoft.Data.Sqlite.Core": "6.0.1",
+          "Microsoft.Data.Sqlite.Core": "6.0.8",
           "SQLitePCLRaw.bundle_e_sqlite3": "2.0.6"
         }
       },
       "Microsoft.Data.Sqlite.Core": {
         "type": "Transitive",
-        "resolved": "6.0.1",
-        "contentHash": "Z8MIjWmzxUjcc2HKTKFHfo7jqqVeVftkigrojGY4zEN8OwjLgJNb5/BqW3J2FiIiCrPBDGNkiVlOERazGfLizg==",
+        "resolved": "6.0.8",
+        "contentHash": "ssJbtn9p7vXh3T4gi7g1Ir0bY4cJgVOU1MtTvnl4JvbLNmlq2q24SNK5jJHK/IPI37nhDqcPLHtfW40bscYU/Q==",
         "dependencies": {
           "SQLitePCLRaw.core": "2.0.6"
         }
