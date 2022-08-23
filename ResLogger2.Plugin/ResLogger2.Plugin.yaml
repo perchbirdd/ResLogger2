@@ -3,5 +3,10 @@ internal_name: ResLogger2.Plugin
 author: perchbird
 load_priority: 1
 description: |-
-  A path logger with optional crowdsourcing functionality.
+  ResLogger2 allows you to log paths that the game loads in a fast and convenient
+  window, with multiple options including only logging unique paths, path filters,
+  and uploading found paths. Note that the current database of found paths can
+  be downloaded at any time at https://rl2.perchbird.dev/export.csv.
+punchline: A path logger with optional crowdsourcing functionality. 
 repo_url: https://github.com/lmcintyre/reslogger2
+changelog: Update for 6.2.

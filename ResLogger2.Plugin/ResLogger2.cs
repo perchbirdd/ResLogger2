@@ -84,8 +84,8 @@ public class ResLogger2 : IDalamudPlugin
         
         var getResourceAsync = sigScanner.ScanText("E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00");
         var getResourceSync = sigScanner.ScanText("E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00");
-        _getResourceAsyncHook = new Hook<GetResourceAsyncPrototype>(getResourceAsync, GetResourceAsyncDetour);
-        _getResourceSyncHook = new Hook<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
+        _getResourceAsyncHook = Hook<GetResourceAsyncPrototype>.FromAddress(getResourceAsync, GetResourceAsyncDetour);
+        _getResourceSyncHook = Hook<GetResourceSyncPrototype>.FromAddress(getResourceSync, GetResourceSyncDetour);
         _getResourceAsyncHook.Enable();
         _getResourceSyncHook.Enable();
     }
