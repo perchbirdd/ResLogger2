@@ -18,6 +18,8 @@ db.init_app(app)
 index_repo = IndexRepository(app.config['INDEX_FOLDER'])
 
 cache = None
+last_new = None
+last_new_time = None
 
 
 @app.route("/")
@@ -27,7 +29,7 @@ def hello_world():
 
 @app.route("/upload", methods=['POST'])
 def upload():
-    global cache
+    global cache, last_new, last_new_time
     start = time.perf_counter()
 
     if len(request.data) > 20000:
@@ -60,6 +62,8 @@ def upload():
             result = db.session.connection().execute(stmt)
             files_that_are_new = files_that_are_new + result.rowcount
             if result.rowcount > 0:
+                last_new = txt
+                last_new_time = time.strftime('%a, %d %b %Y %H:%M:%S ET', time.localtime())
                 print(f"    new: '{txt}'")
         else:
             print(f"nonexistent: '{txt}'")
@@ -132,4 +136,4 @@ def uploadcheck():
 @app.route("/stats")
 def stats():
     # return render_template("stats.html", data=get_stats())
-    return "sorry stats is disabled because im bad at making databases"
+    return f"{last_new} @ {last_new_time}"

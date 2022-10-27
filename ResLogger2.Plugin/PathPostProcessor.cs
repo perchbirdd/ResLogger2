@@ -111,10 +111,10 @@ public class PathPostProcessor
 			pre = paths.Count;
 			PostProcessInternal(ref paths, ref staging);
 		} while (paths.Count != pre);
-		foreach (var path1 in paths)
-		{
-			PluginLog.Debug($"\t{path1}");
-		}
+		// foreach (var path1 in paths)
+		// {
+		// 	PluginLog.Debug($"\t{path1}");
+		// }
 		return paths;
 	}
 }
