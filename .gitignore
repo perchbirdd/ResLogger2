@@ -11,6 +11,11 @@ ignore.txt
 *.7z
 deploy/
 ResLogger2.Web/testing/
+ResLogger2.LocalTools/
+ResLogger2.PatchExtractor/
 tmp/
 *.sh
 *.db
+appsettings.json
+appsettings.Development.json
+launchSettings.json
