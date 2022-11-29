@@ -9,10 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.Web", "ResLogger
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.Common", "ResLogger2.Common\ResLogger2.Common.csproj", "{40ED0CF8-204A-4E35-AE5B-EED75E27722B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.LocalTools", "ResLogger2.LocalTools/ResLogger2.LocalTools.csproj", "{3BF1F515-A45D-4A44-88E5-C037D2C0D5E3}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.PatchExtractor", "ResLogger2.PatchExtractor\ResLogger2.PatchExtractor.csproj", "{ED8FE2C6-B8DC-43FE-BC0E-CE6E431126A2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,14 +27,6 @@ Global
 		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Debug|x64.Build.0 = Debug|Any CPU
 		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Release|x64.ActiveCfg = Release|Any CPU
 		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Release|x64.Build.0 = Release|Any CPU
-		{3BF1F515-A45D-4A44-88E5-C037D2C0D5E3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{3BF1F515-A45D-4A44-88E5-C037D2C0D5E3}.Debug|x64.Build.0 = Debug|Any CPU
-		{3BF1F515-A45D-4A44-88E5-C037D2C0D5E3}.Release|x64.ActiveCfg = Release|Any CPU
-		{3BF1F515-A45D-4A44-88E5-C037D2C0D5E3}.Release|x64.Build.0 = Release|Any CPU
-		{ED8FE2C6-B8DC-43FE-BC0E-CE6E431126A2}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{ED8FE2C6-B8DC-43FE-BC0E-CE6E431126A2}.Debug|x64.Build.0 = Debug|Any CPU
-		{ED8FE2C6-B8DC-43FE-BC0E-CE6E431126A2}.Release|x64.ActiveCfg = Release|Any CPU
-		{ED8FE2C6-B8DC-43FE-BC0E-CE6E431126A2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
