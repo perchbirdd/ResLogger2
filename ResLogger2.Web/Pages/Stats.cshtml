@@ -1,0 +1,85 @@
+﻿@page
+@using ResLogger2.Web.Services
+@model ResLogger2.Web.Pages.Stats
+
+@inject IPathDbService DbService
+@{
+    ViewData["Title"] = "ResLogger2 Stats";
+    var stats = DbService.GetStatsAsync().Result;
+}
+
+<html>
+<head>
+    <style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    
+    td, th {
+      border: 1px solid #404040;
+      text-align: left;
+      padding: 8px;
+    }
+    
+    tr:nth-child(even) {
+      background-color: #404040;
+    }
+    </style>
+</head>
+<body>
+@if (stats.Totals == null)
+{
+    <p>No stats</p>
+}
+else
+{
+    <table>
+    <tr>
+        <th>index id</th>
+        <th>total</th>
+        <th>found</th>
+        <th>percent</th>
+        <th>total current</th>
+        <th>found current</th>
+        <th>percent current</th>
+    </tr>
+    @foreach (var indexId in stats.Totals.Keys) {
+    <tr>
+        <td>@indexId.ToString("X6")</td>
+        <td>@stats.Totals[indexId].TotalPaths</td>
+        <td>@stats.Totals[indexId].Paths</td>
+        @if (stats.Totals[indexId].TotalPaths > 0)
+        {
+            <td>@((stats.Totals[indexId].Paths / (float)stats.Totals[indexId].TotalPaths * 100 ).ToString("F2"))%</td>
+        }
+        else
+        {
+            <td>0%</td>
+        }
+        @if (@stats.Possible.ContainsKey(indexId))
+        {
+            <td>@stats.Possible[indexId].TotalPaths</td>
+            <td>@stats.Possible[indexId].Paths</td>
+            @if (stats.Possible[indexId].TotalPaths > 0)
+            {
+                <td>@((stats.Possible[indexId].Paths / (float)stats.Possible[indexId].TotalPaths * 100 ).ToString("F2"))%</td>
+            }
+            else
+            {
+                <td>0%</td>
+            }    
+        }
+        else
+        {
+            <td>0</td>
+            <td>0</td>
+            <td>100%</td>
+        }
+    </tr>
+    }
+    </table>
+}
+</body>
+</html>

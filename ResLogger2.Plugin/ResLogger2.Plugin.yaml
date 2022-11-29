@@ -5,8 +5,16 @@ load_priority: 1
 description: |-
   ResLogger2 allows you to log paths that the game loads in a fast and convenient
   window, with multiple options including only logging unique paths, path filters,
-  and uploading found paths. Note that the current database of found paths can
-  be downloaded at any time at https://rl2.perchbird.dev/export.csv.
+  and uploading found paths. Information on the crowdsourced paths is available
+  at https://rl2.perchbird.dev.
 punchline: A path logger with optional crowdsourcing functionality. 
 repo_url: https://github.com/lmcintyre/reslogger2
-changelog: Update for 6.2.
+changelog: |-
+  Complete web server rework and increased reliability in the plugin.
+  - [Web only] Reworked the web server to further prevent hash collisions and include information from old game versions more accurately
+  - [Web only] Added new methods of obtaining crowdsourced path data from the web server.
+  - Reworked the database in the plugin to further prevent hash collisions.
+  - Added a stats window to the plugin, showcasing path progress for the current game version and the total amount of paths found.
+  - Added a new command to open the stats window.
+  - Added a new command to perform XIV's crc32 on a given string.
+  - Added a new tooltip to the path list window, showing the path's hashes.

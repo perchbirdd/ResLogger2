@@ -8,7 +8,9 @@ bin/
 *.index
 *.index2
 ignore.txt
-ResLogger2.Web/*.sh
-ResLogger2.Web/services/certbot/
-ResLogger2.Web/services/nginx/
-ResLogger2.Web/services/persistence/
+*.7z
+deploy/
+ResLogger2.Web/testing/
+tmp/
+*.sh
+*.db

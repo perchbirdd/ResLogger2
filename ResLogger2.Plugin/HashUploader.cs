@@ -13,16 +13,12 @@ namespace ResLogger2.Plugin;
 
 public class HashUploader : IDisposable
 {
-    private const string Endpoint = "https://rl2.perchbird.dev/upload";
-    // private const string Endpoint = "http://127.0.0.1:5000/upload";
-
     private const int UploadInterval = 5000;
-    private const int UploadLimit = 1000;
+    private const int UploadLimit = 250;
 
     private readonly ResLogger2 _plugin;
     private readonly ElapsedEventHandler _uploadDelegate;
     private readonly CancellationTokenSource _tokenSource;
-    private readonly HttpClient _client;
     private readonly Timer _timer;
     private AggregateException _lastException;
     private bool _isUploading;
@@ -39,11 +35,7 @@ public class HashUploader : IDisposable
             Count = -1,
             Response = HttpStatusCode.UnavailableForLegalReasons,
         };
-
-        ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-
-        // var handler = 
-        _client = new HttpClient();
+        
         _timer = new Timer();
 
         _uploadDelegate = (_, _) => Upload();
@@ -60,7 +52,6 @@ public class HashUploader : IDisposable
         _timer.Stop();
         _timer.Elapsed -= _uploadDelegate;
         _timer.Dispose();
-        _client.Dispose();
     }
 
     private void Upload()
@@ -79,14 +70,16 @@ public class HashUploader : IDisposable
                 
             PluginLog.Verbose($"[Upload] Data has {data.Entries.Count} index2s.");
             var text = JsonConvert.SerializeObject(data);
-            var textCompressed = StringCompressor.CompressString(text);
-            var content = new StringContent(textCompressed, Encoding.UTF8, "application/rl2");
             
+            using var httpContent = new StringContent(text, Encoding.UTF8, "application/json");
+            using var content = new CompressedContent(httpContent, "gzip");
+
             State.UploadStatus = UploadState.Status.Uploading;
             State.Response = HttpStatusCode.UnavailableForLegalReasons;
             State.Count = -1;
             
-            var response = await _client.PostAsync(Endpoint, content, _tokenSource.Token);
+            // var response = await _client.PostAsync(Endpoint, content, _tokenSource.Token);
+            var response = await Api.Client.PostAsync(Api.UploadEndpoint, httpContent, _tokenSource.Token);
             State.Response = response.StatusCode;
                 
             PluginLog.Verbose($"result: {response.StatusCode}");
@@ -107,6 +100,7 @@ public class HashUploader : IDisposable
         }, _tokenSource.Token).ContinueWith(task =>
         {
             _lastException = task.Exception;
+            // LogUploadExceptions();
             
             // If this is still "Uploading", then we never even managed to connect to the server
             State.UploadStatus = State.UploadStatus == UploadState.Status.Uploading
