@@ -31,8 +31,9 @@
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
 
-  <Target Name="PruneRuntimes" AfterTargets="Build">
-    <RemoveDir Directories="$(TargetDir)runtimes/alpine-x64/;$(TargetDir)runtimes/linux-arm/;$(TargetDir)runtimes/linux-arm64/;$(TargetDir)runtimes/linux-armel/;$(TargetDir)runtimes/linux-mips64/;$(TargetDir)runtimes/linux-musl-x64/;$(TargetDir)runtimes/linux-s390x/;$(TargetDir)runtimes/linux-x64/;$(TargetDir)runtimes/linux-x86/;$(TargetDir)runtimes/osx-arm64/;$(TargetDir)runtimes/osx-x64/;$(TargetDir)runtimes/win-arm/;$(TargetDir)runtimes/win-arm64/;$(TargetDir)runtimes/win-x86/" />
+  <Target Name="Prune" AfterTargets="Build">
+    <RemoveDir Directories="$(TargetDir)runtimes/alpine-x64/;$(TargetDir)runtimes/linux-arm/;$(TargetDir)runtimes/linux-arm64/;$(TargetDir)runtimes/linux-armel/;$(TargetDir)runtimes/linux-mips64/;$(TargetDir)runtimes/linux-musl-x64/;$(TargetDir)runtimes/linux-s390x/;$(TargetDir)runtimes/linux-x64/;$(TargetDir)runtimes/linux-x86/;$(TargetDir)runtimes/osx-arm64/;$(TargetDir)runtimes/osx-x64/;$(TargetDir)runtimes/win-arm/;$(TargetDir)runtimes/win-arm64/;$(TargetDir)runtimes/win-x86/;$(TargetDir)runtimes/alpine-arm/;$(TargetDir)runtimes/alpine-arm64/;$(TargetDir)runtimes/browser-wasm/;$(TargetDir)runtimes/browser;$(TargetDir)runtimes/linux-musl-arm/;$(TargetDir)runtimes/linux-musl-arm64/;$(TargetDir)runtimes/maccatalyst-arm64/;$(TargetDir)runtimes/maccatalyst-x64/;" />
+    <Delete Files="$(TargetDir)Microsoft.EntityFrameworkCore.Abstractions.dll;$(TargetDir)Microsoft.EntityFrameworkCore.dll;$(TargetDir)Microsoft.EntityFrameworkCore.Relational.dll;$(TargetDir)Microsoft.EntityFrameworkCore.Sqlite.dll;$(TargetDir)Microsoft.Extensions.Caching.Abstractions.dll;$(TargetDir)Microsoft.Extensions.Caching.Memory.dll;$(TargetDir)Microsoft.Extensions.Configuration.Abstractions.dll;$(TargetDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll;$(TargetDir)Microsoft.Extensions.DependencyInjection.dll;$(TargetDir)Microsoft.Extensions.DependencyModel.dll;$(TargetDir)Microsoft.Extensions.Logging.Abstractions.dll;$(TargetDir)Microsoft.Extensions.Logging.dll;$(TargetDir)Microsoft.Extensions.Options.dll;$(TargetDir)Microsoft.Extensions.Primitives.dll;$(TargetDir)Newtonsoft.Json.dll;$(TargetDir)Npgsql.dll;$(TargetDir)Npgsql.EntityFrameworkCore.PostgreSQL.dll;$(TargetDir)ZiPatchLib.dll" />
   </Target>
 
   <ItemGroup>
@@ -60,12 +61,12 @@
       <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
 
     <PackageReference Include="DalamudPackager" Version="2.1.8" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.8" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ResLogger2.Common\ResLogger2.Common.csproj" />
   </ItemGroup>
 </Project>

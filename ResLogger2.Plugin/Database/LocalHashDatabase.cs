@@ -9,12 +9,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Logging;
 using Microsoft.Data.Sqlite;
+using ResLogger2.Common;
+using ResLogger2.Common.Api;
 
 namespace ResLogger2.Plugin.Database;
 
 public class LocalHashDatabase
 {
-	private const int Version = 2;
+	private const int Version = 3;
+
+	private const string PathsCreateText = 
+		"BEGIN TRANSACTION;" +
+		"CREATE TABLE DbInfo (Key string NOT NULL, Value string NOT NULL);" +
+		"CREATE TABLE Paths (IndexId INTEGER NOT NULL, FolderHash INTEGER NOT NULL, FileHash INTEGER NOT NULL, FullHash INTEGER NOT NULL, Path TEXT NOT NULL UNIQUE, Uploaded BOOLEAN NOT NULL, PRIMARY KEY (IndexId, FolderHash, FileHash, FullHash));" +
+		"CREATE INDEX 'Paths_FullHash_Index' ON Paths (FullHash);" +
+		"COMMIT TRANSACTION;";
 
 	private readonly ResLogger2 _plugin;
 	private readonly string _hashDbPath;
@@ -24,16 +33,19 @@ public class LocalHashDatabase
 	private readonly CancellationTokenSource _tokenSource;
 	private DbTransaction _transaction;
 
-	private readonly ConcurrentDictionary<uint, ConcurrentDictionary<uint, string>> _fullPaths;
+	private ConcurrentDictionary<uint, ConcurrentDictionary<uint, HashSet<uint>>> _hashesByFolderPath;
+	private ConcurrentDictionary<uint, HashSet<uint>> _hashesByFullPath;
 
 	public LocalHashDatabase(ResLogger2 plugin, string path)
 	{
 		_plugin = plugin;
 		_hashDbPath = path;
-		_fullPaths = new ConcurrentDictionary<uint, ConcurrentDictionary<uint, string>>();
 		_scheduler = new LimitedConcurrencyLevelTaskScheduler(1);
 		_factory = new TaskFactory(_scheduler);
 		_tokenSource = new CancellationTokenSource();
+		
+		_hashesByFolderPath = new ConcurrentDictionary<uint, ConcurrentDictionary<uint, HashSet<uint>>>();
+		_hashesByFullPath = new ConcurrentDictionary<uint, HashSet<uint>>();
 
 		CreateOrDoMigrations();
 		_connection = new SqliteConnection($@"Data Source={_hashDbPath}");
@@ -56,33 +68,30 @@ public class LocalHashDatabase
 	{
 		var s = Stopwatch.StartNew();
 		using var command = _connection.CreateCommand();
-		command.CommandText = @"SELECT hash, `index`, path FROM fullpaths";
+		command.CommandText = @"SELECT IndexId, FolderHash, FileHash, FullHash FROM Paths";
 		using var reader = command.ExecuteReader();
 		while (reader.Read())
 		{
 			if (reader.GetValue(0) == DBNull.Value) continue;
 			if (reader.GetValue(1) == DBNull.Value) continue;
 			if (reader.GetValue(2) == DBNull.Value) continue;
+			if (reader.GetValue(3) == DBNull.Value) continue;
 
-			var hash64 = reader.GetInt64(0);
-			var index = (uint)reader.GetInt64(2);
+			var index = (uint)reader.GetInt64(0);
 
-			if (hash64 > uint.MaxValue || hash64 < uint.MinValue) continue;
-			var hash = (uint)hash64;
+			var folderHash64 = reader.GetInt64(1);
+			if (folderHash64 > uint.MaxValue || folderHash64 < uint.MinValue) continue;
+			var folderHash = (uint)folderHash64;
+			
+			var fileHash64 = reader.GetInt64(2);
+			if (fileHash64 > uint.MaxValue || fileHash64 < uint.MinValue) continue;
+			var fileHash = (uint)fileHash64;
+			
+			var fullHash64 = reader.GetInt64(3);
+			if (fullHash64 > uint.MaxValue || fullHash64 < uint.MinValue) continue;
+			var fullHash = (uint)fullHash64;
 
-			var path = reader.GetString(1);
-			if (string.IsNullOrEmpty(path))
-				continue;
-			if (!_fullPaths.TryGetValue(index, out var paths))
-			{
-				paths = new ConcurrentDictionary<uint, string>();
-				paths.TryAdd(hash, path);
-				_fullPaths.TryAdd(index, paths);
-			}
-			else
-			{
-				paths.TryAdd(hash, path);
-			}
+			AddToCache(index, folderHash, fileHash, fullHash);
 		}
 
 		s.Stop();
@@ -101,12 +110,12 @@ public class LocalHashDatabase
 			.StartNew(() => 
 				PathPostProcessor
 					.PostProcess(path)
-					.Select(x => _plugin.Validator.Exists(x)), _tokenSource.Token)
+					.Select(x => _plugin.Repository.Exists(x)), _tokenSource.Token)
 			.ContinueWith(res =>
 			{
 				foreach (var result in res.Result)
 				{
-					if (!result.FullExists) continue;
+					if (!result.Exists) continue;
 					AddFullPath(result);
 				}
 			}, _tokenSource.Token, TaskContinuationOptions.None, _scheduler)
@@ -123,29 +132,18 @@ public class LocalHashDatabase
 	{
 		if (File.Exists(_hashDbPath))
 		{
-			long version = 0;
-
-			{
-				using var checkConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
-				checkConnection.Open();
-				using var checkCommand = checkConnection.CreateCommand();
-				checkCommand.CommandText = @"SELECT value FROM dbinfo WHERE type = 'version'";
-				using var checkReader = checkCommand.ExecuteReader();
-				if (checkReader.Read())
-				{
-					version = checkReader.GetInt64(0);
-					if (version == Version)
-						return;
-				}
-			}
-			SqliteConnection.ClearAllPools();
-			GC.WaitForPendingFinalizers();
+			var version = GetDbVersion();
+			
+			if (version == Version) return;
 
 			PluginLog.Debug($"Attempting to migrate {version} to {Version}");
 			switch (version)
 			{
 				case 1:
 					Migrate1To2();
+					break;
+				case 2:
+					Migrate2To3();
 					break;
 				default:
 					throw new Exception("Unknown database version.");
@@ -161,15 +159,11 @@ public class LocalHashDatabase
 		try
 		{
 			var createCmd = connection.CreateCommand();
-			createCmd.CommandText =
-				"BEGIN TRANSACTION;" +
-				"CREATE TABLE dbinfo (type string NOT NULL, value string NOT NULL);" +
-				"CREATE TABLE fullpaths (hash INTEGER NOT NULL, `index` INTEGER NOT NULL, path TEXT NOT NULL, uploaded BOOLEAN NOT NULL, PRIMARY KEY (hash, `index`));" +
-				"COMMIT TRANSACTION;";
+			createCmd.CommandText = PathsCreateText;
 			result = createCmd.ExecuteNonQuery();
 			var transaction = connection.BeginTransaction();
 			createCmd = connection.CreateCommand();
-			createCmd.CommandText = @"INSERT INTO dbinfo VALUES('version', @Version)";
+			createCmd.CommandText = @"INSERT INTO DbInfo VALUES('Version', @Version)";
 			createCmd.Parameters.AddWithValue("@Version", Version.ToString());
 			createCmd.ExecuteNonQuery();
 			transaction.Commit();
@@ -185,6 +179,36 @@ public class LocalHashDatabase
 		PluginLog.Information($"[CreateIfNotExists] Created database.");
 	}
 
+	private long GetDbVersion()
+	{
+		long version = 0;
+
+		try
+		{
+			using var checkConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
+			checkConnection.Open();
+			using var checkCommand = checkConnection.CreateCommand();
+			checkCommand.CommandText = @"SELECT value FROM dbinfo WHERE type = 'version'";
+			using var checkReader = checkCommand.ExecuteReader();
+			if (checkReader.Read())
+				version = checkReader.GetInt64(0);
+		} catch (SqliteException e) {
+			PluginLog.Verbose("[GetDbVersion] Failed to get db version for version 1 and 2. Trying 3.");
+			
+			using var checkConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
+			checkConnection.Open();
+			using var checkCommand = checkConnection.CreateCommand();
+			checkCommand.CommandText = @"SELECT Value FROM DbInfo WHERE Key = 'Version'";
+			using var checkReader = checkCommand.ExecuteReader();
+			if (checkReader.Read())
+				version = checkReader.GetInt64(0);
+		}
+		SqliteConnection.ClearAllPools();
+		GC.WaitForPendingFinalizers();
+
+		return version;
+	}
+
 	public async Task<UploadedDbData> GetUploadableData(int limit)
 	{
 		return await _factory.StartNew(() =>
@@ -195,7 +219,7 @@ public class LocalHashDatabase
 			{
 				using var cmd = _connection.CreateCommand();
 				cmd.Parameters.Add(new SqliteParameter("@Limit", SqliteType.Integer));
-				cmd.CommandText = @"SELECT path FROM fullpaths WHERE fullpaths.uploaded = 0 LIMIT @Limit";
+				cmd.CommandText = @"SELECT Path FROM Paths WHERE Uploaded = 0 LIMIT @Limit";
 				cmd.Parameters["@Limit"].Value = limit;
 				using var reader = cmd.ExecuteReader();
 
@@ -213,6 +237,11 @@ public class LocalHashDatabase
 			RestartTransaction();
 			return data;
 		}, _tokenSource.Token);
+		// 	.ContinueWith((task, result) =>
+		// {
+		// 	PluginLog.Error(task.Exception, "[GetUploadableData] oopsie!");
+		// 	return (UploadedDbData)result;
+		// }, _tokenSource.Token, TaskContinuationOptions.OnlyOnFaulted);
 	}
 
 	public void SetUploaded(UploadedDbData data)
@@ -221,42 +250,39 @@ public class LocalHashDatabase
 		{
 			RestartTransaction();
 
-			using var cmd = _connection.CreateCommand();
-			cmd.Parameters.Add(new SqliteParameter("@Hash", SqliteType.Integer));
-
-			foreach (var fullPath in data.Entries)
+			using (var cmd = _connection.CreateCommand())
 			{
-				cmd.CommandText = @"UPDATE fullpaths SET uploaded = 1 WHERE hash = @Hash";
-				cmd.Parameters["@Hash"].Value = Lumina.Misc.Crc32.Get(fullPath);
-				cmd.ExecuteNonQuery();
+				cmd.CommandText = @"UPDATE Paths SET Uploaded = 1 WHERE FullHash = @FullHash AND IndexId = @IndexId AND FolderHash = @FolderHash AND FileHash = @FileHash";
+				cmd.Parameters.Add(new SqliteParameter("@IndexId", SqliteType.Integer));
+				cmd.Parameters.Add(new SqliteParameter("@FolderHash", SqliteType.Integer));
+				cmd.Parameters.Add(new SqliteParameter("@FileHash", SqliteType.Integer));
+				cmd.Parameters.Add(new SqliteParameter("@FullHash", SqliteType.Integer));
+				
+				foreach (var fullPath in data.Entries)
+				{
+					var indexId = Utils.GetCategoryIdForPath(fullPath);
+					var (folderHash, fileHash, fullHash) = Utils.CalcAllHashes(fullPath);
+					cmd.Parameters["@IndexId"].Value = indexId;
+					cmd.Parameters["@FolderHash"].Value = folderHash;
+					cmd.Parameters["@FileHash"].Value = fileHash;
+					cmd.Parameters["@FullHash"].Value = fullHash;
+					cmd.ExecuteNonQuery();
+				}
 			}
-
+			
 			RestartTransaction();
 		}, _tokenSource.Token);
 	}
 
-	public void SetNoneUploaded()
+	public void SetAllUploaded(bool state)
 	{
 		_factory.StartNew(() =>
 		{
 			RestartTransaction();
 
 			using var cmd = _connection.CreateCommand();
-			cmd.CommandText = @"UPDATE fullpaths SET uploaded = 0";
-			cmd.ExecuteNonQuery();
-
-			RestartTransaction();
-		}, _tokenSource.Token);
-	}
-
-	public void SetAllUploaded()
-	{
-		_factory.StartNew(() =>
-		{
-			RestartTransaction();
-
-			using var cmd = _connection.CreateCommand();
-			cmd.CommandText = @"UPDATE fullpaths SET uploaded = 1";
+			cmd.CommandText = @"UPDATE Paths SET Uploaded = @Uploaded WHERE Uploaded != @Uploaded";
+			cmd.Parameters.AddWithValue("@Uploaded", state ? 1 : 0);
 			cmd.ExecuteNonQuery();
 
 			RestartTransaction();
@@ -275,8 +301,15 @@ public class LocalHashDatabase
 
 	private void RestartTransaction()
 	{
-		End();
-		Begin();
+		try
+		{
+			End();
+			Begin();
+		}
+		catch (SqliteException e)
+		{
+			PluginLog.Error(e, "[RestartTransaction] Failed to restart transaction.");	
+		}
 	}
 
 	public void SubmitRestartTransaction()
@@ -284,33 +317,77 @@ public class LocalHashDatabase
 		_factory.StartNew(RestartTransaction, _tokenSource.Token);
 	}
 
-	private void AddFullPath(ExistsResult result)
+	private void AddFullPath(ExistsResult existsResult)
 	{
-		if (!result.FullExists) return;
-		if (!_fullPaths.TryGetValue(result.IndexId, out var index))
-		{
-			index = new ConcurrentDictionary<uint, string>();
-			_fullPaths.TryAdd(result.IndexId, index);
-		}
-		else if (index.ContainsKey(result.FullHash)) return;
+		if (!existsResult.Exists) return;
+		if (!AddToCache(existsResult)) return;
 
-		index.TryAdd(result.FullHash, result.FullText);
 		using var command = _connection.CreateCommand();
-		command.CommandText = @"INSERT OR IGNORE INTO fullpaths values(@Hash, @Index, @Path, 0)";
-		command.Parameters.AddWithValue("@Hash", result.FullHash);
-		command.Parameters.AddWithValue("@Index", result.IndexId);
-		command.Parameters.AddWithValue("@Path", result.FullText);
+		command.CommandText = @"INSERT INTO Paths VALUES(@IndexId, @FolderHash, @FileHash, @FullHash, @Path, 0)";
+		command.Parameters.AddWithValue("@IndexId", existsResult.IndexId);
+		command.Parameters.AddWithValue("@FolderHash", existsResult.FolderHash);
+		command.Parameters.AddWithValue("@FileHash", existsResult.FileHash);
+		command.Parameters.AddWithValue("@FullHash", existsResult.FullHash);
+		command.Parameters.AddWithValue("@Path", existsResult.FullText);
 		command.ExecuteNonQuery();
 	}
 
-	public bool ExportFileList()
+	private bool AddToCache(ExistsResult result)
 	{
-		var path = _hashDbPath + ".export";
-		var paths = new List<string>();
-		foreach (var index in _fullPaths)
-			paths.AddRange(index.Value.Values);
-		File.WriteAllLines(path, paths);
-		return File.Exists(path);
+		return AddToCache(result.IndexId, result.FolderHash, result.FileHash, result.FullHash);
+	}
+	
+	private bool AddToCache(uint indexId, uint folderHash, uint fileHash, uint fullHash)
+	{
+		if (!_hashesByFullPath.TryGetValue(indexId, out var fullHashes))
+			_hashesByFullPath.TryAdd(indexId, new HashSet<uint> { fullHash });
+		else
+		{
+			if (fullHashes.Contains(fullHash))
+				return false;
+			fullHashes.Add(fullHash);
+		}
+		
+		if (!_hashesByFolderPath.ContainsKey(indexId))
+			_hashesByFolderPath.TryAdd(indexId, new ConcurrentDictionary<uint, HashSet<uint>>());
+		if (!_hashesByFolderPath[indexId].TryGetValue(folderHash, out var fileHashes))
+			_hashesByFolderPath[indexId].TryAdd(folderHash, new HashSet<uint> { fileHash });
+		else
+		{
+			if (fileHashes.Contains(fileHash))
+				return false;
+			fileHashes.Add(fileHash);
+		}
+
+		return true;
+	}
+
+	public async Task<List<string>> GetPathList()
+	{
+		return await _factory.StartNew(() =>
+		{
+			RestartTransaction();
+			var data = new List<string>();
+			try
+			{
+				using var cmd = _connection.CreateCommand();
+				cmd.CommandText = @"SELECT Path FROM Paths";
+				using var reader = cmd.ExecuteReader();
+
+				while (reader.Read())
+				{
+					var path = reader.GetString(0);
+					data.Add(path);
+				}
+			}
+			catch (Exception e)
+			{
+				PluginLog.Error(e, "[GetPathList] oopsie!");
+			}
+
+			RestartTransaction();
+			return data;
+		}, _tokenSource.Token);
 	}
 
 	private void Migrate1To2()
@@ -318,6 +395,92 @@ public class LocalHashDatabase
 		Dispose();
 		File.Delete(_hashDbPath);
 		CreateOrDoMigrations();
+	}
+
+	private void Migrate2To3()
+	{
+		var paths = new List<string>();
+		{
+			using var tmpConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
+			tmpConnection.Open();
+			using (var checkCommand = tmpConnection.CreateCommand())
+			{
+				checkCommand.CommandText = @"SELECT path FROM fullpaths";
+				using var reader = checkCommand.ExecuteReader();
+				while (reader.Read())
+				{
+					if (reader.GetValue(0) == DBNull.Value) continue;
+
+					var path = reader.GetString(0);
+					if (string.IsNullOrEmpty(path)) continue;
+					paths.Add(path);
+				}	
+			}
+			
+			using (var dropCmd = tmpConnection.CreateCommand())
+			{
+				dropCmd.CommandText = "DROP TABLE dbinfo";
+				dropCmd.ExecuteNonQuery();	
+			}
+			
+			using (var createCmd = tmpConnection.CreateCommand())
+			{
+				createCmd.CommandText = PathsCreateText;
+				createCmd.ExecuteNonQuery();	
+			}
+			
+			using var transaction = tmpConnection.BeginTransaction();
+
+			using (var insertCmd = tmpConnection.CreateCommand())
+			{
+				insertCmd.CommandText = @"INSERT INTO DbInfo (Key, Value) VALUES (@Key, @Value)";
+				insertCmd.Parameters.AddWithValue("@Key", "Version");
+				insertCmd.Parameters.AddWithValue("@Value", "3");
+				insertCmd.ExecuteNonQuery();	
+			}
+
+			using (var insertCmd = tmpConnection.CreateCommand())
+			{
+				insertCmd.CommandText = @"INSERT INTO Paths (IndexId, FolderHash, FileHash, FullHash, Path, Uploaded) VALUES (@IndexId, @FolderHash, @FileHash, @FullHash, @Path, @Uploaded)";
+				insertCmd.Parameters.Add("@IndexId", SqliteType.Integer);
+				insertCmd.Parameters.Add("@FolderHash", SqliteType.Integer);
+				insertCmd.Parameters.Add("@FileHash", SqliteType.Integer);
+				insertCmd.Parameters.Add("@FullHash", SqliteType.Integer);
+				insertCmd.Parameters.Add("@Path", SqliteType.Text);
+				insertCmd.Parameters.Add("@Uploaded", SqliteType.Integer);	
+
+				foreach (var path in paths)
+				{
+					var existsResult = _plugin.Repository.Exists(path);
+					if (!existsResult.Exists) continue;
+					insertCmd.Parameters["@IndexId"].Value = existsResult.IndexId;
+					insertCmd.Parameters["@FolderHash"].Value = existsResult.FolderHash;
+					insertCmd.Parameters["@FileHash"].Value = existsResult.FileHash;
+					insertCmd.Parameters["@FullHash"].Value = existsResult.FullHash;
+					insertCmd.Parameters["@Path"].Value = existsResult.FullText;
+					insertCmd.Parameters["@Uploaded"].Value = 1;
+					insertCmd.ExecuteNonQuery();
+				}	
+			}
+
+			using (var dropCmd = tmpConnection.CreateCommand())
+			{
+				dropCmd.CommandText = "DROP TABLE fullpaths;";
+				dropCmd.ExecuteNonQuery();
+			}
+
+			transaction.Commit();
+
+			using (var vacuumCmd = tmpConnection.CreateCommand())
+			{
+				vacuumCmd.CommandText = "VACUUM";
+				vacuumCmd.ExecuteNonQuery();
+			}
+			
+			tmpConnection.Close();
+		}
+		SqliteConnection.ClearAllPools();
+		GC.WaitForPendingFinalizers();
 	}
 
 	// public string GetFullPath(uint fullHash)

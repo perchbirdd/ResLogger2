@@ -13,6 +13,7 @@ public class Configuration : IPluginConfiguration
     public bool AutoScroll { get; set; }
     public bool OpenAtStartup { get; set; }
     public bool OnlyDisplayUnique { get; set; }
+    public bool HashTooltip { get; set; }
 
     [NonSerialized]
     private DalamudPluginInterface _pluginInterface;

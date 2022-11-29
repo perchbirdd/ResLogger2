@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ResLogger2.Web/Dockerfile
+    volumes:
+      - ./deploy/persistence/web/:/usr/src/app/persistence/
+    ports:
+      - "5103:5103"
+      - "7281:7281"
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+  db:
+    image: bitnami/postgresql:14.6.0
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./deploy/persistence/db/:/bitnami/postgresql
+    env_file:
+      - ./.env.dev

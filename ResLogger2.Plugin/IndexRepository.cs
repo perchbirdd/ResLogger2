@@ -3,166 +3,118 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Dalamud.Logging;
+using ResLogger2.Common;
 
-namespace ResLogger2.Plugin
+namespace ResLogger2.Plugin;
+
+public class IndexRepository
 {
-    public class IndexValidator
+    private readonly Dictionary<uint, Dictionary<uint, HashSet<uint>>> _indexesByFolderPath;
+    private readonly Dictionary<uint, HashSet<uint>> _indexesByFullPath;
+
+    public IndexRepository(string gamePath)
     {
-        private readonly Dictionary<uint, HashSet<uint>> _indexes = new();
-        private uint _indexCount;
+        Initialize(gamePath);
+    }
 
-        public IndexValidator(string gamePath)
+    public IndexRepository()
+    {
+        _indexesByFolderPath = new Dictionary<uint, Dictionary<uint, HashSet<uint>>>();
+        _indexesByFullPath = new Dictionary<uint, HashSet<uint>>();
+        var gamePath = Process.GetCurrentProcess().MainModule?.FileName;
+        if (string.IsNullOrEmpty(gamePath)) return;
+        Initialize(gamePath);
+    }
+
+    private void Initialize(string gamePath)
+    {
+        gamePath = Path.GetDirectoryName(gamePath);
+        var indexData = PatchIndexHolder.LoadAllIndexData(gamePath).ToList();
+        foreach (var comp in indexData)
         {
-            Initialize(gamePath);
-        }
+            var indexId = comp.IndexId;
 
-        public IndexValidator()
-        {
-            var gamePath = Process.GetCurrentProcess().MainModule?.FileName;
-            if (string.IsNullOrEmpty(gamePath))
-                return;
-            Initialize(gamePath);
-        }
+            if (!_indexesByFolderPath.ContainsKey(indexId))
+                _indexesByFolderPath.Add(indexId, new Dictionary<uint, HashSet<uint>>());
+            
+            if (!_indexesByFullPath.ContainsKey(indexId))
+                _indexesByFullPath.Add(indexId, new HashSet<uint>());
 
-        private void Initialize(string gamePath)
-        {
-            gamePath = Path.GetDirectoryName(gamePath);
-            var indexes = Directory.GetFiles(gamePath, "*.index2", SearchOption.AllDirectories);
-
-            foreach (var index in indexes)
-                ReadIndex(index);
-            PluginLog.Verbose($"Loaded {_indexCount} full hashes");
-        }
-
-        private void ReadIndex(string path)
-        {
-            var indexIdStr = Path.GetFileNameWithoutExtension(path).Replace(".win32", "");
-            var indexId = uint.Parse(indexIdStr, NumberStyles.HexNumber);
-            var br = new BinaryReader(new MemoryStream(File.ReadAllBytes(path)));
-            br.BaseStream.Seek(12, SeekOrigin.Begin);
-            var skip = br.ReadUInt32();
-            br.BaseStream.Seek(skip + 8, SeekOrigin.Begin);
-            var seekTo = br.ReadUInt32();
-            var hashCount = br.ReadUInt32() / 8; //8 for index2
-            br.BaseStream.Seek(seekTo, SeekOrigin.Begin);
-
-            for (int i = 0; i < hashCount; i++)
+            foreach (var combinedEntry in comp.CombinedIndexEntries.Values)
             {
-                var fullHash = br.ReadUInt32();
-                if (_indexes.ContainsKey(indexId))
-                    _indexes[indexId].Add(fullHash);
+                var folderHash = combinedEntry.FolderHash;
+                var fileHash = combinedEntry.FileHash;
+                var fullHash = combinedEntry.FullHash;
+                    
+                if (!_indexesByFolderPath[indexId].TryGetValue(folderHash, out var fileIndexes))
+                    _indexesByFolderPath[indexId].Add(folderHash, new HashSet<uint> { fileHash});
                 else
-                    _indexes.Add(indexId, new HashSet<uint> { fullHash });
-                br.BaseStream.Seek(4, SeekOrigin.Current);
+                    fileIndexes.Add(fileHash);
+                    
+                _indexesByFullPath[indexId].Add(fullHash);
             }
 
-            PluginLog.Verbose($"Loaded index2 {indexId} {indexId:x6} with {hashCount} hashes");
-            _indexCount += hashCount;
-        }
-
-        private uint GetCategoryIdForPath(string gamePath)
-        {
-            return gamePath switch
+            foreach (var index1Entry in comp.Index1Entries.Values)
             {
-                _ when gamePath.StartsWith("com") => 0x000000,
-                _ when gamePath.StartsWith("bgc") => 0x010000,
-                _ when gamePath.StartsWith("bg/") => GetBgSubCategoryId(gamePath) | (0x02 << 16),
-                _ when gamePath.StartsWith("cut") => GetNonBgSubCategoryId(gamePath, 4) | (0x03 << 16),
-                _ when gamePath.StartsWith("cha") => 0x040000,
-                _ when gamePath.StartsWith("sha") => 0x050000,
-                _ when gamePath.StartsWith("ui/") => 0x060000,
-                _ when gamePath.StartsWith("sou") => 0x070000,
-                _ when gamePath.StartsWith("vfx") => 0x080000,
-                _ when gamePath.StartsWith("ui_") => 0x090000,
-                _ when gamePath.StartsWith("exd") => 0x0A0000,
-                _ when gamePath.StartsWith("gam") => 0x0B0000,
-                _ when gamePath.StartsWith("mus") => GetNonBgSubCategoryId(gamePath, 6) | (0x0C << 16),
-                _ when gamePath.StartsWith("_sq") => 0x110000,
-                _ when gamePath.StartsWith("_de") => 0x120000,
-                _ => 0
+                var folderHash = index1Entry.FolderHash;
+                var fileHash = index1Entry.FileHash;
+                    
+                if (!_indexesByFolderPath[indexId].TryGetValue(folderHash, out var fileIndexes))
+                    _indexesByFolderPath[indexId].Add(folderHash, new HashSet<uint> { fileHash});
+                else
+                    fileIndexes.Add(fileHash);
+            }
+
+            foreach (var index2Entry in comp.Index2Entries.Values)
+            {
+                var fullHash = index2Entry.FullHash;
+                _indexesByFullPath[indexId].Add(fullHash);
+            }
+        }
+    }
+
+    public ExistsResult Exists(string gamePath)
+    {
+        try
+        {
+            var lowerPath = gamePath.ToLower();
+            var indexId = Utils.GetCategoryIdForPath(lowerPath);
+            var hashes = Utils.CalcAllHashes(lowerPath);
+
+            var result = new ExistsResult
+            {
+                FullText = gamePath,
+                IndexId = indexId,
             };
-        }
 
-        private uint GetBgSubCategoryId(string gamePath)
+            result.Exists1 = CheckExists(indexId, hashes.folderHash, hashes.fileHash);
+            result.Exists2 = CheckExists(indexId, hashes.fullHash);
+
+            return result;
+        }
+        catch (Exception e)
         {
-            var segmentIdIndex = 3;
-            uint expacId = 0;
-
-            // Check if this is an ex* path
-            if (gamePath[3] != 'e')
-                return 0;
-
-            // Check if our expac ID has one or two digits
-            if (gamePath[6] == '/')
-            {
-                expacId = uint.Parse(gamePath[5..6]) << 8;
-                segmentIdIndex = 7;
-            }
-            else if (gamePath[7] == '/')
-            {
-                expacId = uint.Parse(gamePath[5..7]) << 8;
-                segmentIdIndex = 8;
-            }
-            else
-            {
-                expacId = 0;
-            }
-
-            // Parse the segment id for this bg path
-            var segmentIdStr = gamePath.Substring(segmentIdIndex, 2);
-            var segmentId = uint.Parse(segmentIdStr);
-
-            return expacId + segmentId;
+            PluginLog.Error(e, "An error occurred in ResLogger2.");
         }
 
-        private uint GetNonBgSubCategoryId(string gamePath, int firstDirLen)
-        {
-            if (gamePath[firstDirLen] != 'e')
-                return 0;
+        return default;
+    }
 
-            if (gamePath[firstDirLen + 3] == '/')
-                return uint.Parse(gamePath.Substring(firstDirLen + 2, 1)) << 8;
+    private bool CheckExists(uint indexId, uint folderHash, uint fileHash)
+    {
+        if (!_indexesByFolderPath.TryGetValue(indexId, out var folderIndexes))
+            return false;
+        if (!folderIndexes.TryGetValue(folderHash, out var fileIndexes))
+            return false;
+        return fileIndexes.Contains(fileHash);
+    }
 
-            if (gamePath[firstDirLen + 4] == '/')
-                return uint.Parse(gamePath.Substring(firstDirLen + 2, 2)) << 8;
-
-            return 0;
-        }
-
-        public ExistsResult Exists(string gamePath)
-        {
-            try
-            {
-                var lowerPath = gamePath.ToLower();
-                var indexId = GetCategoryIdForPath(lowerPath);
-                var fullHash = Lumina.Misc.Crc32.Get(lowerPath);
-                if (_indexes.TryGetValue(indexId, out var hashes))
-                {
-                    if (hashes.Contains(fullHash))
-                    {
-                        return new ExistsResult
-                        {
-                            FullText = gamePath,
-                            FullExists = true,
-                            IndexId = indexId
-                        };
-                    }
-                }
-
-                return new ExistsResult
-                {
-                    FullText = gamePath,
-                    FullExists = false,
-                    IndexId = uint.MaxValue
-                };
-            }
-            catch (Exception e)
-            {
-                PluginLog.Error(e, "An error occurred in ResLogger2.");
-            }
-
-            return default;
-        }
+    private bool CheckExists(uint indexId, uint fullHash)
+    {
+        if (!_indexesByFullPath.TryGetValue(indexId, out var fullIndexes))
+            return false;
+        return fullIndexes.Contains(fullHash);
     }
 }
