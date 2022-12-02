@@ -60,11 +60,17 @@ public class PathDbService : IPathDbService
 				continue;
 			}
 			
-			var index1Query = _db.Index1StagingEntries.FirstOrDefault(p => p.IndexId == index
-			                                                               && p.FolderHash == hashes.folderHash
-			                                                               && p.FileHash == hashes.fileHash);
-			var index2Query = _db.Index2StagingEntries.FirstOrDefault(p => p.IndexId == index
-			                                                               && p.FullHash == hashes.fullHash);
+			var index1Query = _db.Index1StagingEntries
+				.Include(i => i.FirstSeen)
+				.Include(i => i.LastSeen)
+				.FirstOrDefault(p => p.IndexId == index
+													&& p.FolderHash == hashes.folderHash
+													&& p.FileHash == hashes.fileHash);
+			var index2Query = _db.Index2StagingEntries
+				.Include(i => i.FirstSeen)
+				.Include(i => i.LastSeen)
+				.FirstOrDefault(p => p.IndexId == index
+													&& p.FullHash == hashes.fullHash);
 			
 			if (index1Query == null && index2Query == null)
 			{
