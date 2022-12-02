@@ -18,7 +18,7 @@ public class PathDbService : IPathDbService
 		public bool WasInIndex1;
 		public bool WasInIndex2;
 	}
-	
+
 	private readonly ServerHashDatabase _db;
 	private readonly IDbLockService _dbLockService;
 	private readonly ILogger<PathDbService> _logger;
@@ -38,15 +38,15 @@ public class PathDbService : IPathDbService
 		var wasInIndex1 = false;
 		var wasInIndex2 = false;
 		var post = isPost ? PostPrefix : string.Empty;
-		
+
 		foreach (var path in data)
 		{
 			var hashes = Utils.CalcAllHashes(path.ToLower());
 			var index = Utils.GetCategoryIdForPath(path);
 			var pathQuery = _db.Paths.FirstOrDefault(p => p.IndexId == index
-			                                               && p.FullHash == hashes.fullHash
-			                                               && p.FolderHash == hashes.folderHash
-			                                               && p.FileHash == hashes.fileHash);
+			                                              && p.FullHash == hashes.fullHash
+			                                              && p.FolderHash == hashes.folderHash
+			                                              && p.FileHash == hashes.fileHash);
 
 			if (pathQuery != null) // ?
 			{
@@ -59,26 +59,26 @@ public class PathDbService : IPathDbService
 				}
 				continue;
 			}
-			
+
 			var index1Query = _db.Index1StagingEntries
 				.Include(i => i.FirstSeen)
 				.Include(i => i.LastSeen)
 				.FirstOrDefault(p => p.IndexId == index
-													&& p.FolderHash == hashes.folderHash
-													&& p.FileHash == hashes.fileHash);
+				                     && p.FolderHash == hashes.folderHash
+				                     && p.FileHash == hashes.fileHash);
 			var index2Query = _db.Index2StagingEntries
 				.Include(i => i.FirstSeen)
 				.Include(i => i.LastSeen)
 				.FirstOrDefault(p => p.IndexId == index
-													&& p.FullHash == hashes.fullHash);
-			
+				                     && p.FullHash == hashes.fullHash);
+
 			if (index1Query == null && index2Query == null)
 			{
 				_logger.LogWarning("{post}nonexistent: {path} {fullhash} {folderhash}/{filehash}", post, path, hashes.fullHash, hashes.folderHash, hashes.fileHash);
 				continue;
 			}
 			existPaths++;
-			
+
 			GameVersion earliest = null;
 			GameVersion latest = null;
 
@@ -89,7 +89,7 @@ public class PathDbService : IPathDbService
 				latest = index1Query.LastSeen;
 				_db.Index1StagingEntries.Remove(index1Query);
 			}
-			
+
 			if (index2Query != null)
 			{
 				wasInIndex2 = true;
@@ -119,7 +119,7 @@ public class PathDbService : IPathDbService
 				_logger.LogError("{post}Latest or earliest is null: {path} {fullhash} {folderhash}/{filehash}", post, path, hashes.fullHash, hashes.folderHash, hashes.fileHash);
 				continue;
 			}
-			
+
 			_db.Paths.Add(new PathEntry
 			{
 				Path = path,
@@ -144,18 +144,18 @@ public class PathDbService : IPathDbService
 	{
 		var toPost = new HashSet<string>();
 		foreach (var path in entries)
-			foreach (var entry in PathPostProcessor.PostProcess(path))
-				toPost.Add(entry);
+		foreach (var entry in PathPostProcessor.PostProcess(path))
+			toPost.Add(entry);
 		return toPost;
 	}
-	
+
 	public async Task<bool> ProcessDataAsync(UploadedDbData data)
 	{
 		var stopwatch = Stopwatch.StartNew();
 
 		var totals = new ProcessingTotals();
 		var success = false;
-		
+
 		try
 		{
 			var loc = await _dbLockService.AcquireLockAsync();
@@ -165,7 +165,7 @@ public class PathDbService : IPathDbService
 				// var postEntries = PostProcess(data.Entries);
 				// totals.PostProcessed = postEntries.Count;
 				// ProcessInternal(ref totals, postEntries, true);
-				
+
 				await _db.SaveChangesAsync();
 				success = true;
 			}
@@ -177,12 +177,12 @@ public class PathDbService : IPathDbService
 		catch (Exception e)
 		{
 			_logger.LogError(e, "Error processing data");
-		}	
+		}
 		finally
 		{
 			_dbLockService.ReleaseLock();
 		}
-		
+
 		var time = stopwatch.ElapsedMilliseconds;
 		_logger.LogInformation("request: {exist} exist, {new} new, {post} from post, index1 {index1} index2 {index2} time {time}", totals.ExistPaths, totals.NewPaths, totals.PostProcessed, totals.WasInIndex1, totals.WasInIndex2, time);
 		return success;
@@ -192,29 +192,41 @@ public class PathDbService : IPathDbService
 	{
 		var stopwatch = Stopwatch.StartNew();
 		var pathsByIndex =
-				await _db.Paths
-					.AsNoTracking()
-					.IgnoreAutoIncludes()
-					.GroupBy(p => p.IndexId)
-					.Select(g => new {Index = g.Key, Total = g.Count(), Count = g.Count(pe => pe.Path != null)})
-					.ToDictionaryAsync(g => g.Index,
-						g =>
-							new IndexStats
-							{
-								TotalPaths = (uint) g.Total,
-								Paths = (uint)g.Count,
-							});
-		var ret = new StatsData { Totals = pathsByIndex };
+			await _db.Paths
+				.AsNoTracking()
+				.IgnoreAutoIncludes()
+				.GroupBy(p => p.IndexId)
+				.Select(g => new
+				{
+					Index = g.Key,
+					Total = g.Count(),
+					Count = g.Count(pe => pe.Path != null)
+				})
+				.ToDictionaryAsync(g => g.Index,
+					g =>
+						new IndexStats
+						{
+							TotalPaths = (uint)g.Total,
+							Paths = (uint)g.Count,
+						});
+		var ret = new StatsData
+		{
+			Totals = pathsByIndex
+		};
 		_logger.LogInformation("pathsByIndex took {time}ms", stopwatch.ElapsedMilliseconds);
 		stopwatch.Restart();
 
-		var pathsByIndexLatest = 
+		var pathsByIndexLatest =
 			await _db.Paths
 				.AsNoTracking()
 				.Join(_db.LatestIndexes.AsNoTracking(),
 					p => p.IndexId,
 					i => i.IndexId,
-					(p, i) => new {PathEntry = p, LatestIndex = i})
+					(p, i) => new
+					{
+						PathEntry = p,
+						LatestIndex = i
+					})
 				.Where(p => p.PathEntry.LastSeen.Id == p.LatestIndex.GameVersion.Id)
 				.GroupBy(p => p.PathEntry.IndexId)
 				.Select(g =>
@@ -228,12 +240,12 @@ public class PathDbService : IPathDbService
 					g =>
 						new IndexStats
 						{
-							TotalPaths = (uint) g.Total,
+							TotalPaths = (uint)g.Total,
 							Paths = (uint)g.Count,
 						});
 		_logger.LogInformation("pathsByIndexLatestQuery took {time}ms", stopwatch.ElapsedMilliseconds);
 		ret.Possible = pathsByIndexLatest;
-		
+
 		return ret;
 	}
 }
