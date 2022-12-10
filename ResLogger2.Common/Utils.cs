@@ -1,4 +1,4 @@
-using System.IO.Hashing;
+﻿using System.IO.Hashing;
 using System.Text;
 using Newtonsoft.Json;
 using ResLogger2.Common.Api;
@@ -128,6 +128,16 @@ public static class Utils
 	public static UploadedDbData GetUploadDataObjectFromString(string content)
 	{
 		return JsonConvert.DeserializeObject<UploadedDbData>(content);
+	}
+	
+	public static ulong CalcExtendedHashWithLower(string fullText)
+	{
+		var tText = fullText.ToLowerInvariant();
+		Span<byte> data = stackalloc byte[tText.Length];
+		Encoding.ASCII.GetBytes(tText, data);
+		Span<byte> hash = stackalloc byte[8];
+		Crc64.Hash(data, hash);
+		return BitConverter.ToUInt64(hash);
 	}
 	
 	public static ulong CalcExtendedHash(string fullText)

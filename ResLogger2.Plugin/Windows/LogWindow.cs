@@ -166,6 +166,7 @@ public class LogWindow : Window
                 var onlyDisplayUnique = _plugin.Configuration.OnlyDisplayUnique;
                 var openAtStartup = _plugin.Configuration.OpenAtStartup;
                 var hashTooltip = _plugin.Configuration.HashTooltip;
+                var logNonexistent = _plugin.Configuration.LogNonexistentPaths;
 
                 if (ImGui.MenuItem("Upload paths", "", ref upload))
                 {
@@ -196,6 +197,13 @@ public class LogWindow : Window
                     _plugin.Configuration.HashTooltip = hashTooltip;
                     _plugin.Configuration.Save();
                 }
+                
+                if (ImGui.MenuItem("Log paths that don't exist", "", ref logNonexistent))
+                {
+                    _plugin.Configuration.LogNonexistentPaths = logNonexistent;
+                    _plugin.Configuration.Save();
+                    Refilter();
+                }
 
                 ImGui.EndMenu();
             }
@@ -220,6 +228,8 @@ public class LogWindow : Window
                 {
                     _plugin.Database.SetAllUploaded(true);
                 }
+                
+                ImGui.MenuItem("_isFiltered", "", ref _isFiltered);
                 ImGui.EndMenu();
             }
             #endif
@@ -299,7 +309,7 @@ public class LogWindow : Window
             _levelFilter = (HookType)filterVal;
             Refilter();
         }
-        _isFiltered = !string.IsNullOrEmpty(_textFilter) || _levelFilter != HookType.None;
+        _isFiltered = !string.IsNullOrEmpty(_textFilter) || _levelFilter != HookType.None || !_plugin.Configuration.LogNonexistentPaths;
 
         ImGui.BeginChild("scrolling", new Vector2(0, -1), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
@@ -337,10 +347,16 @@ public class LogWindow : Window
                     }
                     else
                     {
+                        if (!line.Info.Exists)
+                            ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudGrey);
+                        
                         ImGui.TextUnformatted(GetTextForLogEventLevel(line.HookType));
                         ImGui.SameLine();
                         ImGui.SetCursorPosX(cursorLogLine);
                         ImGui.TextUnformatted(line.Info.FullText);
+                        
+                        if (!line.Info.Exists)
+                            ImGui.PopStyleColor();
                         
                         if (ImGui.IsItemHovered() && _plugin.Configuration.HashTooltip)
                         {
@@ -370,10 +386,12 @@ public class LogWindow : Window
     
     private void DrawLineTooltip(ExistsResult info)
     {
+        var color = info.Exists ? ImGuiColors.HealerGreen : ImGuiColors.DalamudGrey;
+        
         if (_tooltipLock) return;
         _tooltipLock = true;
         ImGui.BeginTooltip();
-        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.HealerGreen);
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
         var fileText = $"{info.FolderText}: {info.FolderHash:X} ({info.FolderHash})";
         var folderText = $"{info.FileText}: {info.FileHash:X} ({info.FileHash})";
         var fullText = $"{info.FullText}: {info.FullHash:X} ({info.FullHash})";
@@ -387,15 +405,19 @@ public class LogWindow : Window
             var toCopy = $"{fileText}\n{folderText}\n{fullText}";
             ImGui.SetClipboardText(toCopy);
         }
+        
+        if (!info.Exists)
+            ImGui.TextUnformatted("* This path is gray because it is not present in your index files.");
+        
         ImGui.EndTooltip();
     }
 
     private void AddAndFilter(ExistsResult info, HookType level)
     {
-        if (!info.Exists)
-        {
-            PluginLog.Error($"Skipping {info.FullText} because it doesn't exist: {info}");
-        };
+        // if (!info.Exists)
+        // {
+        //     PluginLog.Error($"{info.FullText} doesn't exist: {info}");
+        // };
 
         lock (_renderLock)
         {
@@ -420,12 +442,16 @@ public class LogWindow : Window
     {
         if (_levelFilter != HookType.None)
         {
-            return entry.HookType == _levelFilter;
+            if (entry.HookType != _levelFilter)
+                return false;
         }
+        
+        if (!_plugin.Configuration.LogNonexistentPaths && !entry.Info.Exists)
+            return false;
 
-        if (!string.IsNullOrEmpty(_textFilter))
-            return entry.Info.FullText.Contains(_textFilter);
-
+        if (!string.IsNullOrEmpty(_textFilter) && !entry.Info.FullText.Contains(_textFilter))
+            return false;
+        
         return true;
     }
 
