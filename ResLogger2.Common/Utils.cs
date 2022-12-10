@@ -1,4 +1,4 @@
-﻿using System.IO.Hashing;
+using System.IO.Hashing;
 using System.Text;
 using Newtonsoft.Json;
 using ResLogger2.Common.Api;
@@ -49,8 +49,8 @@ public static class Utils
 			_ when gamePath.StartsWith(EXD) => 0x0A0000,
 			_ when gamePath.StartsWith(GAME_SCRIPT) => 0x0B0000,
 			_ when gamePath.StartsWith(MUSIC) => GetNonBgSubCategoryId(gamePath, 6) | (0x0C << 16),
-			_ when gamePath.StartsWith(SQPACK_TEST) => 0x110000,
-			_ when gamePath.StartsWith(DEBUG) => 0x120000,
+			_ when gamePath.StartsWith(SQPACK_TEST) => 0x120000,
+			_ when gamePath.StartsWith(DEBUG) => 0x130000,
 			_ => 0,
 		};
 	}
