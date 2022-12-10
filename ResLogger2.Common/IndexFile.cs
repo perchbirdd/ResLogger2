@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -264,7 +264,23 @@ public class IndexFile
 		var tmpPath = Path.GetFileName(path);
 		var indexIdStr = tmpPath[..(tmpPath.IndexOf('.'))];
 		ind.IndexId = uint.Parse(indexIdStr, NumberStyles.HexNumber);
-		ind.VersionInfo = VersionInfo.Read(br);
+		
+		try
+		{
+			ind.VersionInfo = VersionInfo.Read(br);
+		}
+		catch (Exception e)
+		{
+			// We can't log here for the plugin, so just return an empty index
+			ind.VersionInfo = new VersionInfo();
+			ind.FileInfo = new FileInfo();
+			ind.Collisions32 = new List<Collision32>();
+			ind.Collisions64 = new List<Collision64>();
+			ind.Hashes32 = new Dictionary<uint, Hash32>();
+			ind.Hashes64 = new Dictionary<ulong, Hash64>();
+			return ind;
+		}
+		
 		ind.FileInfo = FileInfo.Read(br);
 
 		if (ind.FileInfo.IndexType == 0)

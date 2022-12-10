@@ -31,7 +31,17 @@ public class IndexRepository
     private void Initialize(string gamePath)
     {
         gamePath = Path.GetDirectoryName(gamePath);
-        var indexData = PatchIndexHolder.LoadAllIndexData(gamePath).ToList();
+
+        List<CompositeIndexInfo> indexData = null;
+        try
+        {
+            indexData = PatchIndexHolder.LoadAllIndexData(gamePath).ToList();
+        }
+        catch (Exception e)
+        {
+            PluginLog.Error(e, "An error occurred initializing the index repository.");
+        }
+        
         foreach (var comp in indexData)
         {
             var indexId = comp.IndexId;
