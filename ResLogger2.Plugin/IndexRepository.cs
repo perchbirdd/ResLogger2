@@ -31,6 +31,7 @@ public class IndexRepository
     private void Initialize(string gamePath)
     {
         gamePath = Path.GetDirectoryName(gamePath);
+        gamePath = Path.Combine(gamePath, "sqpack");
 
         List<CompositeIndexInfo> indexData = null;
         try

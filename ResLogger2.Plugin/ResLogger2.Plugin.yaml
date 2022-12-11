@@ -7,6 +7,7 @@ description: |-
   window, with multiple options including only logging unique paths, path filters,
   and uploading found paths. Information on the crowdsourced paths is available
   at https://rl2.perchbird.dev.
+  Open the UI with /reslog.
 punchline: A path logger with optional crowdsourcing functionality. 
 repo_url: https://github.com/lmcintyre/reslogger2
 changelog: |-
