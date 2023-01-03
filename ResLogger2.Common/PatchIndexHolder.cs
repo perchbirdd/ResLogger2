@@ -74,8 +74,8 @@ public class PatchIndexHolder
 
 	public static List<CompositeIndexInfo> LoadAllIndexData(string directory)
 	{
-		var index1s = Directory.GetFiles(directory, "*.index", SearchOption.AllDirectories).ToDictionary(Path.GetFileNameWithoutExtension, IndexFile.Read);
-		var index2s = Directory.GetFiles(directory, "*.index2", SearchOption.AllDirectories).ToDictionary(Path.GetFileNameWithoutExtension, IndexFile.Read);
+		var index1s = GetIndexFiles(directory, "*.index");
+		var index2s = GetIndexFiles(directory, "*.index2");
 
 		var combined = new List<CompositeIndexInfo>();
 
@@ -100,5 +100,21 @@ public class PatchIndexHolder
 		}
 
 		return combined;
+	}
+
+	// stupid method to fix textools fuckup
+	private static Dictionary<string, IndexFile> GetIndexFiles(string directory, string pattern)
+	{
+		var paths = Directory.GetFiles(directory, pattern, SearchOption.AllDirectories);
+		var dict = new Dictionary<string, IndexFile>();
+		foreach (var path in paths)
+		{
+			// remove this when ingesting
+			if (path.Contains("090000"))
+				continue;
+			
+			dict.Add(Path.GetFileNameWithoutExtension(path), IndexFile.Read(path));
+		}
+		return dict;
 	}
 }
