@@ -170,10 +170,11 @@ public class UpdateJob : IJob
 		_logger.LogInformation("Patch processing complete.");
 		_logger.LogInformation("Beginning patch import.");
 		
+		var loc = await _dbLockService.AcquireLockAsync(TimeSpan.FromSeconds(30));
+		
 		try
 		{
-			var inLock = await _dbLockService.AcquireLockAsync(TimeSpan.FromSeconds(30));
-			if (!inLock)
+			if (!loc)
 			{
 				_logger.LogError("Could not acquire db lock.");
 				return;
@@ -190,7 +191,8 @@ public class UpdateJob : IJob
 		}
 		finally
 		{
-			_dbLockService.ReleaseLock();
+			if (loc)
+				_dbLockService.ReleaseLock();
 		}
 		
 		_logger.LogInformation("Patch import complete.");

@@ -156,9 +156,10 @@ public class PathDbService : IPathDbService
 		var totals = new ProcessingTotals();
 		var success = false;
 
+		var loc = await _dbLockService.AcquireLockAsync();
+		
 		try
 		{
-			var loc = await _dbLockService.AcquireLockAsync();
 			if (loc)
 			{
 				ProcessInternal(ref totals, data.Entries, false);
@@ -180,7 +181,8 @@ public class PathDbService : IPathDbService
 		}
 		finally
 		{
-			_dbLockService.ReleaseLock();
+			if (loc)
+				_dbLockService.ReleaseLock();
 		}
 
 		var time = stopwatch.ElapsedMilliseconds;
