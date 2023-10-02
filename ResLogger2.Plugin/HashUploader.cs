@@ -68,7 +68,7 @@ public class HashUploader : IDisposable
                 return;
             }
                 
-            PluginLog.Verbose($"[Upload] Data has {data.Entries.Count} index2s.");
+            DalamudApi.PluginLog.Verbose($"[Upload] Data has {data.Entries.Count} index2s.");
             var text = JsonConvert.SerializeObject(data);
             
             using var httpContent = new StringContent(text, Encoding.UTF8, "application/json");
@@ -82,11 +82,11 @@ public class HashUploader : IDisposable
             var response = await Api.Client.PostAsync(Api.UploadEndpoint, httpContent, _tokenSource.Token);
             State.Response = response.StatusCode;
                 
-            PluginLog.Verbose($"result: {response.StatusCode}");
+            DalamudApi.PluginLog.Verbose($"result: {response.StatusCode}");
 
             if (response.StatusCode == HttpStatusCode.Accepted)
             {
-                PluginLog.Verbose("[Upload] Status was accepted, setting data as uploaded.");
+                DalamudApi.PluginLog.Verbose("[Upload] Status was accepted, setting data as uploaded.");
                 _plugin.Database.SetUploaded(data);
                 State.UploadStatus = UploadState.Status.Success;
                 State.Response = response.StatusCode;
@@ -114,9 +114,9 @@ public class HashUploader : IDisposable
 
     public void LogUploadExceptions()
     {
-        PluginLog.Error(_lastException, "An exception occurred while uploading ResLogger2 data.");
+        DalamudApi.PluginLog.Error(_lastException, "An exception occurred while uploading ResLogger2 data.");
         foreach (var ex in _lastException.InnerExceptions)
-            PluginLog.Error(ex, "Nested exception(s) occurred while uploading ResLogger2 data.");
+            DalamudApi.PluginLog.Error(ex, "Nested exception(s) occurred while uploading ResLogger2 data.");
     }
 }
 

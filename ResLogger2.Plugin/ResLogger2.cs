@@ -1,17 +1,14 @@
 ﻿using Dalamud.Game.Command;
 using Dalamud.Plugin;
-using Dalamud.IoC;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Dalamud.Game;
-using Dalamud.Game.Gui;
 using Dalamud.Hooking;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using ResLogger2.Common;
 using ResLogger2.Plugin.Database;
+using ResLogger2.Plugin.Windows;
 
 namespace ResLogger2.Plugin;
 
@@ -19,9 +16,6 @@ public class ResLogger2 : IDalamudPlugin
 {
     public string Name => "ResLogger2.Plugin";
     
-    public static DalamudPluginInterface PluginInterface { get; set; }
-    public static CommandManager CommandManager { get; set; }
-    public static ChatGui ChatGui { get; set; }
     public Configuration Configuration { get; init; }
     public IndexRepository Repository { get; }
     public LocalHashDatabase Database { get; }
@@ -41,25 +35,19 @@ public class ResLogger2 : IDalamudPlugin
     private LogWindow LogWindow { get; init; }
     private StatsWindow StatsWindow { get; init; }
 
-    public ResLogger2(
-        [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] CommandManager commandManager,
-        [RequiredVersion("1.0")] ChatGui chatGui,
-        [RequiredVersion("1.0")] SigScanner sigScanner)
+    public ResLogger2(DalamudPluginInterface pi)
     {
-        PluginInterface = pluginInterface;
-        CommandManager = commandManager;
-        ChatGui = chatGui;
+        DalamudApi.Initialize(pi);
 
-        Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        Configuration.Initialize(PluginInterface);
+        Configuration = DalamudApi.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Configuration.Initialize(DalamudApi.PluginInterface);
         
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        DalamudApi.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Performs ResLogger2 commands. Use /reslog help for more information.",
         });
 
-        var loc = pluginInterface.GetPluginConfigDirectory();
+        var loc = DalamudApi.PluginInterface.GetPluginConfigDirectory();
         loc = Path.Join(loc, "hashdb.db");
 
         try
@@ -70,7 +58,7 @@ public class ResLogger2 : IDalamudPlugin
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "An error occurred in ResLogger2.");
+            DalamudApi.PluginLog.Error(e, "An error occurred in ResLogger2.");
             Dispose();
             return;
         }
@@ -84,12 +72,12 @@ public class ResLogger2 : IDalamudPlugin
         ResLogWindows.AddWindow(LogWindow);
         ResLogWindows.AddWindow(StatsWindow);
         
-        PluginInterface.UiBuilder.Draw += () => ResLogWindows.Draw();
+        DalamudApi.PluginInterface.UiBuilder.Draw += () => ResLogWindows.Draw();
         
-        var getResourceAsync = sigScanner.ScanText("E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00");
-        var getResourceSync = sigScanner.ScanText("E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00");
-        _getResourceAsyncHook = Hook<GetResourceAsyncPrototype>.FromAddress(getResourceAsync, GetResourceAsyncDetour);
-        _getResourceSyncHook = Hook<GetResourceSyncPrototype>.FromAddress(getResourceSync, GetResourceSyncDetour);
+        var getResourceAsync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00");
+        var getResourceSync = DalamudApi.SigScanner.ScanText("E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00");
+        _getResourceAsyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceAsyncPrototype>(getResourceAsync, GetResourceAsyncDetour);
+        _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
         _getResourceAsyncHook.Enable();
         _getResourceSyncHook.Enable();
     }
@@ -129,7 +117,7 @@ public class ResLogger2 : IDalamudPlugin
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "An error occurred in ResLogger2.");
+            DalamudApi.PluginLog.Error(e, "An error occurred in ResLogger2.");
         }
     }
 
@@ -148,15 +136,15 @@ public class ResLogger2 : IDalamudPlugin
         StatsWindow?.Dispose();
         Uploader?.Dispose();
         Database?.Dispose();
-        CommandManager.RemoveHandler(CommandName);
+        DalamudApi.CommandManager.RemoveHandler(CommandName);
     }
 
     private void OnCommand(string command, string args)
     {
         try
         {
-            PluginLog.Debug(command);
-            PluginLog.Debug(args);
+            DalamudApi.PluginLog.Debug(command);
+            DalamudApi.PluginLog.Debug(args);
 
             var argv = args.Split(' ');
 
@@ -170,11 +158,11 @@ public class ResLogger2 : IDalamudPlugin
                     StatsWindow.Toggle();
                 } else if (argv[0] == "help")
                 {
-                    ChatGui.Print("ResLogger2 commands:");
-                    ChatGui.Print("/reslog - Opens the ResLogger2 window.");
-                    ChatGui.Print("/reslog help - Shows this help message.");
-                    ChatGui.Print("/reslog hash - Perform XIV's crc32 on an input string or path.");
-                    ChatGui.Print("/reslog stats - Opens the ResLogger2 stats window.");
+                    DalamudApi.ChatGui.Print("ResLogger2 commands:");
+                    DalamudApi.ChatGui.Print("/reslog - Opens the ResLogger2 window.");
+                    DalamudApi.ChatGui.Print("/reslog help - Shows this help message.");
+                    DalamudApi.ChatGui.Print("/reslog hash - Perform XIV's crc32 on an input string or path.");
+                    DalamudApi.ChatGui.Print("/reslog stats - Opens the ResLogger2 stats window.");
                 }
                 
             }
@@ -190,21 +178,21 @@ public class ResLogger2 : IDalamudPlugin
                         var splitter = toHash2.LastIndexOf('/');
                         var folderStr = toHash2[..splitter];
                         var fileStr = toHash2[(splitter + 1)..];
-                        ChatGui.Print($"{folderStr}: {hashes.folderHash:X} ({hashes.folderHash})");
-                        ChatGui.Print($"{fileStr}: {hashes.fileHash:X} ({hashes.fileHash})");
-                        ChatGui.Print($"{toHash}: {hashes.fullHash:X} ({hashes.fullHash})");
+                        DalamudApi.ChatGui.Print($"{folderStr}: {hashes.folderHash:X} ({hashes.folderHash})");
+                        DalamudApi.ChatGui.Print($"{fileStr}: {hashes.fileHash:X} ({hashes.fileHash})");
+                        DalamudApi.ChatGui.Print($"{toHash}: {hashes.fullHash:X} ({hashes.fullHash})");
                     }
                     else
                     {
                         var hash = Utils.CalcFullHash(toHash);
-                        ChatGui.Print($"{toHash}: {hash:X} ({hash})");
+                        DalamudApi.ChatGui.Print($"{toHash}: {hash:X} ({hash})");
                     }
                 }
             }
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "oopsie woopsie");
+            DalamudApi.PluginLog.Error(e, "oopsie woopsie");
         }
     }
     
@@ -231,7 +219,7 @@ public class ResLogger2 : IDalamudPlugin
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "An error occurred in ResLogger2.");
+            DalamudApi.PluginLog.Error(e, "An error occurred in ResLogger2.");
         }
     }
 }

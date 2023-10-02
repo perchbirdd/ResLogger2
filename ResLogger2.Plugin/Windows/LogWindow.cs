@@ -9,12 +9,13 @@ using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using ImGuiNET;
 using ResLogger2.Common;
 
-namespace ResLogger2.Plugin;
+namespace ResLogger2.Plugin.Windows;
 
 public class LogWindow : Window
 {
@@ -114,18 +115,18 @@ public class LogWindow : Window
                             var result = _plugin.Database.GetPathList().Result;
                             if (result == null)
                             {
-                                PluginLog.Error("Failed to get path list from database.");
+                                DalamudApi.PluginLog.Error("Failed to get path list from database.");
                                 return;
                             }
-                            var configDir = ResLogger2.PluginInterface.ConfigDirectory;
+                            var configDir = DalamudApi.PluginInterface.ConfigDirectory;
                             var path = Path.Combine(configDir.FullName, "export.txt");
                             File.WriteAllLines(path, result);
-                            ResLogger2.PluginInterface.UiBuilder.AddNotification($"Exported path list to {path}.", "Export Complete", NotificationType.Success);
+                            DalamudApi.PluginInterface.UiBuilder.AddNotification($"Exported path list to {path}.", "Export Complete", NotificationType.Success);
                         }
                         catch (Exception e)
                         {
-                            PluginLog.Error(e, "Failed to export path list...");
-                            ResLogger2.PluginInterface.UiBuilder.AddNotification("An error occurred while exporting path list. Check the plugin log for more information.", "Export Failed", NotificationType.Error);
+                            DalamudApi.PluginLog.Error(e, "Failed to export path list...");
+                            DalamudApi.PluginInterface.UiBuilder.AddNotification("An error occurred while exporting path list. Check the plugin log for more information.", "Export Failed", NotificationType.Error);
                         }
                             
                     });
@@ -342,7 +343,7 @@ public class LogWindow : Window
                     if (!_entries.TryGetValue(hash, out var line))
                     {
                         var text = $"wtf {hash}";
-                        PluginLog.Error(text);
+                        DalamudApi.PluginLog.Error(text);
                         ImGui.TextUnformatted(text);
                     }
                     else
@@ -416,7 +417,7 @@ public class LogWindow : Window
     {
         // if (!info.Exists)
         // {
-        //     PluginLog.Error($"{info.FullText} doesn't exist: {info}");
+        //     DalamudApi.PluginLog.Error($"{info.FullText} doesn't exist: {info}");
         // };
 
         lock (_renderLock)

@@ -1,21 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Interface;
-using Dalamud.Interface.Colors;
-using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using ImGuiNET;
 using Newtonsoft.Json;
 using ResLogger2.Common.Api;
 
-namespace ResLogger2.Plugin;
+namespace ResLogger2.Plugin.Windows;
 
 public class StatsWindow : Window
 {

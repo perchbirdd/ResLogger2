@@ -40,7 +40,7 @@ public class IndexRepository
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "An error occurred initializing the index repository.");
+            DalamudApi.PluginLog.Error(e, "An error occurred initializing the index repository.");
         }
         
         foreach (var comp in indexData)
@@ -107,7 +107,7 @@ public class IndexRepository
         }
         catch (Exception e)
         {
-            PluginLog.Error(e, "An error occurred in ResLogger2.");
+            DalamudApi.PluginLog.Error(e, "An error occurred in ResLogger2.");
         }
 
         return default;

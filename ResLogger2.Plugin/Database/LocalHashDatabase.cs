@@ -95,7 +95,7 @@ public class LocalHashDatabase
 		}
 
 		s.Stop();
-		PluginLog.Information($"Hash database loaded in {s.ElapsedMilliseconds}ms.");
+		DalamudApi.PluginLog.Information($"Hash database loaded in {s.ElapsedMilliseconds}ms.");
 		Begin();
 	}
 
@@ -123,7 +123,7 @@ public class LocalHashDatabase
 			{
 				if (res.IsFaulted)
 				{
-					PluginLog.Error(res.Exception, $"Error processing path post-processing!");
+					DalamudApi.PluginLog.Error(res.Exception, $"Error processing path post-processing!");
 				}
 			}, _tokenSource.Token, TaskContinuationOptions.OnlyOnFaulted, _scheduler);
 	}
@@ -136,7 +136,7 @@ public class LocalHashDatabase
 			
 			if (version == Version) return;
 
-			PluginLog.Debug($"Attempting to migrate {version} to {Version}");
+			DalamudApi.PluginLog.Debug($"Attempting to migrate {version} to {Version}");
 			switch (version)
 			{
 				case 1:
@@ -170,13 +170,13 @@ public class LocalHashDatabase
 		}
 		catch (SqliteException e)
 		{
-			PluginLog.Error(e, "[CreateIfNotExists] Failed to create db.");
-			PluginLog.Error($"[CreateIfNotExists] Result was {result}!");
+			DalamudApi.PluginLog.Error(e, "[CreateIfNotExists] Failed to create db.");
+			DalamudApi.PluginLog.Error($"[CreateIfNotExists] Result was {result}!");
 		}
 
 		connection.Close();
 		connection.Dispose();
-		PluginLog.Information($"[CreateIfNotExists] Created database.");
+		DalamudApi.PluginLog.Information($"[CreateIfNotExists] Created database.");
 	}
 
 	private long GetDbVersion()
@@ -193,7 +193,7 @@ public class LocalHashDatabase
 			if (checkReader.Read())
 				version = checkReader.GetInt64(0);
 		} catch (SqliteException e) {
-			PluginLog.Verbose("[GetDbVersion] Failed to get db version for version 1 and 2. Trying 3.");
+			DalamudApi.PluginLog.Verbose("[GetDbVersion] Failed to get db version for version 1 and 2. Trying 3.");
 			
 			using var checkConnection = new SqliteConnection($@"Data Source={_hashDbPath}");
 			checkConnection.Open();
@@ -231,7 +231,7 @@ public class LocalHashDatabase
 			}
 			catch (Exception e)
 			{
-				PluginLog.Error(e, "[GetUploadableData] oopsie!");
+				DalamudApi.PluginLog.Error(e, "[GetUploadableData] oopsie!");
 			}
 
 			RestartTransaction();
@@ -239,7 +239,7 @@ public class LocalHashDatabase
 		}, _tokenSource.Token);
 		// 	.ContinueWith((task, result) =>
 		// {
-		// 	PluginLog.Error(task.Exception, "[GetUploadableData] oopsie!");
+		// 	DalamudApi.PluginLog.Error(task.Exception, "[GetUploadableData] oopsie!");
 		// 	return (UploadedDbData)result;
 		// }, _tokenSource.Token, TaskContinuationOptions.OnlyOnFaulted);
 	}
@@ -308,7 +308,7 @@ public class LocalHashDatabase
 		}
 		catch (SqliteException e)
 		{
-			PluginLog.Error(e, "[RestartTransaction] Failed to restart transaction.");	
+			DalamudApi.PluginLog.Error(e, "[RestartTransaction] Failed to restart transaction.");	
 		}
 	}
 
@@ -382,7 +382,7 @@ public class LocalHashDatabase
 			}
 			catch (Exception e)
 			{
-				PluginLog.Error(e, "[GetPathList] oopsie!");
+				DalamudApi.PluginLog.Error(e, "[GetPathList] oopsie!");
 			}
 
 			RestartTransaction();
