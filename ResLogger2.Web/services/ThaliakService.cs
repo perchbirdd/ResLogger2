@@ -45,6 +45,12 @@ public class ThaliakService : IThaliakService
 						versionString
 					}
 				}
+				ex5: repository(slug:"6cfeab11") {
+					slug
+					latestVersion {
+						versionString
+					}
+				}
 			}
 			""",
 		};
@@ -99,6 +105,13 @@ public class ThaliakService : IThaliakService
 			  }
 			  ex4: repository(slug:"1bf99b87") {
 			    versions {
+			      patches {
+			        url
+			      }
+			    }
+			  }
+			  ex5: repository(slug:"6cfeab11") {
+				versions {
 			      patches {
 			        url
 			      }

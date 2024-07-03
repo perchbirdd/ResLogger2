@@ -88,6 +88,8 @@ public class UpdateJob : IJob
 		var patchFilesNeeded = new Dictionary<string, List<string>>();
 		foreach (var patchFile in patchFiles)
 		{
+			if (Path.GetFileNameWithoutExtension(patchFile).StartsWith("H")) continue;
+			
 			var versionInfo = GetRepoAndVersion(patchFile);
 
 			if (!updatesNeeded.TryGetValue(versionInfo.Repo, out var update))

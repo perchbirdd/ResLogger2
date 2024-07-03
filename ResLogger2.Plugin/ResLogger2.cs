@@ -35,7 +35,7 @@ public class ResLogger2 : IDalamudPlugin
     private LogWindow LogWindow { get; init; }
     private StatsWindow StatsWindow { get; init; }
 
-    public ResLogger2(DalamudPluginInterface pi)
+    public ResLogger2(IDalamudPluginInterface pi)
     {
         DalamudApi.Initialize(pi);
 
@@ -74,8 +74,8 @@ public class ResLogger2 : IDalamudPlugin
         
         DalamudApi.PluginInterface.UiBuilder.Draw += () => ResLogWindows.Draw();
         
-        var getResourceAsync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00");
-        var getResourceSync = DalamudApi.SigScanner.ScanText("E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00");
+        var getResourceAsync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B 5C 24 ?? 48 83 C4 68");
+        var getResourceSync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B D8 8B C7");
         _getResourceAsyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceAsyncPrototype>(getResourceAsync, GetResourceAsyncDetour);
         _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
         _getResourceAsyncHook.Enable();

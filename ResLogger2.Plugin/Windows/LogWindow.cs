@@ -8,10 +8,9 @@ using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using ImGuiNET;
 using ResLogger2.Common;
 
@@ -75,15 +74,15 @@ public class LogWindow : Window
         lock (_renderLock)
         {
             ICollection<ulong> source = unique ? _uniqueLogText : _logText;
-        
+
             foreach (var hash in source)
             {
                 if (!_entries.TryGetValue(hash, out var logEntry)) continue;
                 sb.Append(logEntry.Info.FullText);
                 sb.Append(Environment.NewLine);
-            }    
+            }
         }
-        
+
         ImGui.SetClipboardText(sb.ToString());
     }
 
@@ -118,26 +117,35 @@ public class LogWindow : Window
                                 DalamudApi.PluginLog.Error("Failed to get path list from database.");
                                 return;
                             }
+
                             var configDir = DalamudApi.PluginInterface.ConfigDirectory;
                             var path = Path.Combine(configDir.FullName, "export.txt");
                             File.WriteAllLines(path, result);
-                            DalamudApi.PluginInterface.UiBuilder.AddNotification($"Exported path list to {path}.", "Export Complete", NotificationType.Success);
+                            DalamudApi.NotificationManager.AddNotification(new Notification
+                            {
+                                Title = "Export Complete",
+                                Content = $"Exported path list to {path}.",
+                                Type = NotificationType.Success
+                            });
                         }
                         catch (Exception e)
                         {
                             DalamudApi.PluginLog.Error(e, "Failed to export path list...");
-                            DalamudApi.PluginInterface.UiBuilder.AddNotification("An error occurred while exporting path list. Check the plugin log for more information.", "Export Failed", NotificationType.Error);
+                            DalamudApi.NotificationManager.AddNotification(new Notification
+                            {
+                                Content = "An error occurred while exporting path list. Check the plugin log for more information.",
+                                Title = "Export Failed",
+                                Type = NotificationType.Error
+                            });
                         }
-                            
                     });
                 }
+
                 if (ImGui.MenuItem("Import path list to database"))
                 {
-                    _fileDialogManager.OpenFileDialog("Import path list", ".*", (b, s) =>
-                    {
-                        Task.Run(() => _plugin.HandleImport(b, s));    
-                    });
+                    _fileDialogManager.OpenFileDialog("Import path list", ".*", (b, s) => { Task.Run(() => _plugin.HandleImport(b, s)); });
                 }
+
                 ImGui.EndMenu();
             }
 
@@ -157,6 +165,7 @@ public class LogWindow : Window
                 {
                     Copy(true);
                 }
+
                 ImGui.EndMenu();
             }
 
@@ -180,7 +189,7 @@ public class LogWindow : Window
                     _plugin.Configuration.AutoScroll = autoScroll;
                     _plugin.Configuration.Save();
                 }
-                
+
                 if (ImGui.MenuItem("Log unique paths only", "", ref onlyDisplayUnique))
                 {
                     _plugin.Configuration.OnlyDisplayUnique = onlyDisplayUnique;
@@ -192,13 +201,13 @@ public class LogWindow : Window
                     _plugin.Configuration.OpenAtStartup = openAtStartup;
                     _plugin.Configuration.Save();
                 }
-                
+
                 if (ImGui.MenuItem("Show hash tooltip", "", ref hashTooltip))
                 {
                     _plugin.Configuration.HashTooltip = hashTooltip;
                     _plugin.Configuration.Save();
                 }
-                
+
                 if (ImGui.MenuItem("Log paths that don't exist", "", ref logNonexistent))
                 {
                     _plugin.Configuration.LogNonexistentPaths = logNonexistent;
@@ -208,33 +217,35 @@ public class LogWindow : Window
 
                 ImGui.EndMenu();
             }
-            
+
             if (ImGui.BeginMenu("View"))
             {
                 if (ImGui.MenuItem("Open Server Stats Window"))
                 {
                     _plugin.OpenStatsWindow();
                 }
+
                 ImGui.EndMenu();
             }
 
-            #if DEBUG
+#if DEBUG
             if (ImGui.BeginMenu("Debug"))
             {
                 if (ImGui.MenuItem("Set none uploaded"))
                 {
                     _plugin.Database.SetAllUploaded(false);
                 }
+
                 if (ImGui.MenuItem("Set all uploaded"))
                 {
                     _plugin.Database.SetAllUploaded(true);
                 }
-                
+
                 ImGui.MenuItem("_isFiltered", "", ref _isFiltered);
                 ImGui.EndMenu();
             }
-            #endif
-            
+#endif
+
             if (_plugin.Configuration.Upload)
             {
                 var state = _plugin.Uploader.State;
@@ -266,7 +277,7 @@ public class LogWindow : Window
                         var pos2 = pos + size;
 
                         ImGui.PopStyleColor();
-                        
+
                         var clicked = false;
                         if (ImGui.IsMouseHoveringRect(pos, pos2, false))
                         {
@@ -275,7 +286,7 @@ public class LogWindow : Window
                             ImGui.Text("Click to log last exception to the Plugin Log for troubleshooting.");
                             ImGui.EndTooltip();
                         }
-                        
+
                         if (clicked)
                             _plugin.Uploader.LogUploadExceptions();
                         break;
@@ -285,9 +296,10 @@ public class LogWindow : Window
                         ImGui.PopStyleColor();
                         break;
                 }
+
                 ImGui.PopStyleVar();
             }
-            
+
             ImGui.EndMenuBar();
         }
     }
@@ -298,18 +310,20 @@ public class LogWindow : Window
         {
             Refilter();
         }
+
         ImGui.SameLine();
         ImGui.Text("Hook Type:");
         ImGui.SameLine();
         ImGui.SetNextItemWidth(-1);
-        
+
         var filterVal = (int)_levelFilter;
         var enumValues = Enum.GetValues(typeof(HookType));
         if (ImGui.Combo("##filtertype", ref filterVal, enumValues.Cast<HookType>().Select(x => x.ToString()).ToArray(), enumValues.Length))
-        { 
+        {
             _levelFilter = (HookType)filterVal;
             Refilter();
         }
+
         _isFiltered = !string.IsNullOrEmpty(_textFilter) || _levelFilter != HookType.None || !_plugin.Configuration.LogNonexistentPaths;
 
         ImGui.BeginChild("scrolling", new Vector2(0, -1), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
@@ -334,7 +348,7 @@ public class LogWindow : Window
         {
             var e = Source.ToList();
             clipper.Begin(e.Count);
-            
+
             while (clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
@@ -350,15 +364,15 @@ public class LogWindow : Window
                     {
                         if (!line.Info.Exists)
                             ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudGrey);
-                        
+
                         ImGui.TextUnformatted(GetTextForLogEventLevel(line.HookType));
                         ImGui.SameLine();
                         ImGui.SetCursorPosX(cursorLogLine);
                         ImGui.TextUnformatted(line.Info.FullText);
-                        
+
                         if (!line.Info.Exists)
                             ImGui.PopStyleColor();
-                        
+
                         if (ImGui.IsItemHovered() && _plugin.Configuration.HashTooltip)
                         {
                             DrawLineTooltip(line.Info);
@@ -384,11 +398,11 @@ public class LogWindow : Window
 
         ImGui.EndChild();
     }
-    
+
     private void DrawLineTooltip(ExistsResult info)
     {
         var color = info.Exists ? ImGuiColors.HealerGreen : ImGuiColors.DalamudGrey;
-        
+
         if (_tooltipLock) return;
         _tooltipLock = true;
         ImGui.BeginTooltip();
@@ -406,10 +420,10 @@ public class LogWindow : Window
             var toCopy = $"{fileText}\n{folderText}\n{fullText}";
             ImGui.SetClipboardText(toCopy);
         }
-        
+
         if (!info.Exists)
             ImGui.TextUnformatted("* This path is gray because it is not present in your index files.");
-        
+
         ImGui.EndTooltip();
     }
 
@@ -427,15 +441,15 @@ public class LogWindow : Window
                 entry = new LogEntry(info, level);
                 _entries.Add(info.ExtendedHash, entry);
             }
-            
+
             _logText.Add(info.ExtendedHash);
             _uniqueLogText.Add(info.ExtendedHash);
 
             if (!_isFiltered) return;
             if (!IsFilterApplicable(entry)) return;
-        
+
             _filteredLogText.Add(info.ExtendedHash);
-            _filteredUniqueLogText.Add(info.ExtendedHash);    
+            _filteredUniqueLogText.Add(info.ExtendedHash);
         }
     }
 
@@ -446,13 +460,13 @@ public class LogWindow : Window
             if (entry.HookType != _levelFilter)
                 return false;
         }
-        
+
         if (!_plugin.Configuration.LogNonexistentPaths && !entry.Info.Exists)
             return false;
 
         if (!string.IsNullOrEmpty(_textFilter) && !entry.Info.FullText.Contains(_textFilter))
             return false;
-        
+
         return true;
     }
 
@@ -462,7 +476,7 @@ public class LogWindow : Window
         {
             _filteredLogText.Clear();
             _filteredUniqueLogText.Clear();
-            
+
             _filteredLogText.AddRange(_logText.Where(x => IsFilterApplicable(_entries[x])));
             _filteredUniqueLogText.UnionWith(_uniqueLogText.Where(x => IsFilterApplicable(_entries[x])));
         }
@@ -474,7 +488,7 @@ public class LogWindow : Window
         HookType.Async => "[A]",
         _ => throw new ArgumentOutOfRangeException(level.ToString(), "Invalid HookType"),
     };
-    
+
     private class LogEntry
     {
         public ExistsResult Info { get; }

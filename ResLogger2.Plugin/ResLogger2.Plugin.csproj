@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>0.0.2.5</PluginVersion>
+    <PluginVersion>0.0.2.6</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Platforms>x64</Platforms>
     <Company>perchbird</Company>
     <AssemblyTitle>ResLogger2.Plugin</AssemblyTitle>
@@ -62,7 +62,7 @@
       <Private>False</Private>
     </Reference>
 
-    <PackageReference Include="DalamudPackager" Version="2.1.12" />
+    <PackageReference Include="DalamudPackager" Version="2.1.13" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
   </ItemGroup>
 

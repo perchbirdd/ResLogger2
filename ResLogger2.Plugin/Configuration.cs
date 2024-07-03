@@ -17,9 +17,9 @@ public class Configuration : IPluginConfiguration
     public bool LogNonexistentPaths { get; set; } = true;
 
     [NonSerialized]
-    private DalamudPluginInterface _pluginInterface;
+    private IDalamudPluginInterface _pluginInterface;
 
-    public void Initialize(DalamudPluginInterface pluginInterface)
+    public void Initialize(IDalamudPluginInterface pluginInterface)
     {
         _pluginInterface = pluginInterface;
     }
