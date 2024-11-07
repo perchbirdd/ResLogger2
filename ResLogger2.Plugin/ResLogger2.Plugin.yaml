@@ -9,7 +9,7 @@ description: |-
   at https://rl2.perchbird.dev.
   Open the UI with /reslog.
 punchline: A path logger with optional crowdsourcing functionality. 
-repo_url: https://github.com/lmcintyre/reslogger2
+repo_url: https://github.com/perchbirdd/reslogger2
 changelog: |-
   Complete web server rework and increased reliability in the plugin.
   - [Web only] Reworked the web server to further prevent hash collisions and include information from old game versions more accurately
