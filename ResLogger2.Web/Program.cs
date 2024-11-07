@@ -2,6 +2,7 @@ using LettuceEncrypt;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Quartz;
+using Quartz.AspNetCore;
 using ResLogger2.Common.ServerDatabase;
 using ResLogger2.Web.Jobs;
 using ResLogger2.Web.Services;
@@ -31,6 +32,7 @@ builder.Services.AddQuartz(q =>
 	q.ScheduleJob<UpdateJob>(trigger => trigger
 		.WithIdentity("UpdateJob")
 		.WithCronSchedule("0 30 0/4 * * ?")
+		// .WithCronSchedule("0 20 * * * ?")
 		.StartNow());
 	
 	q.ScheduleJob<ExportJob>(trigger => trigger
