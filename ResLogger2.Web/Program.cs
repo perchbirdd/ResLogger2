@@ -27,8 +27,6 @@ builder.Services.AddScoped<IThaliakService, ThaliakService>();
 
 builder.Services.AddQuartz(q =>
 {
-	q.UseMicrosoftDependencyInjectionJobFactory();
-	
 	q.ScheduleJob<UpdateJob>(trigger => trigger
 		.WithIdentity("UpdateJob")
 		.WithCronSchedule("0 30 0/4 * * ?")
