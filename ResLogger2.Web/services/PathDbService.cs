@@ -156,7 +156,7 @@ public class PathDbService : IPathDbService
 		var totals = new ProcessingTotals();
 		var success = false;
 
-		var loc = await _dbLockService.AcquireLockAsync(TimeSpan.FromSeconds(2));
+		var loc = await _dbLockService.AcquireLockAsync(TimeSpan.FromSeconds(60));
 		
 		try
 		{

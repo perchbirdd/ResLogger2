@@ -108,7 +108,8 @@ public static class Utils
 	
 	public static (uint folderHash, uint fileHash) CalcHashes(string pathStr)
 	{
-		var path = pathStr.AsSpan();
+		var pathLower = pathStr.ToLowerUnsafe();
+		var path = pathLower.AsSpan();
 		var splitter = path.LastIndexOf('/');
 		var folderStr = path[..splitter];
 		var fileStr = path[(splitter + 1)..];
