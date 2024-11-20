@@ -486,6 +486,7 @@ public class LogWindow : Window
     {
         HookType.Sync => "[S]",
         HookType.Async => "[A]",
+        HookType.Unknown => "[U]",
         _ => throw new ArgumentOutOfRangeException(level.ToString(), "Invalid HookType"),
     };
 

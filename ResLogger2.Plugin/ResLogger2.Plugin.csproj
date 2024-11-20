@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    <PluginVersion>0.0.2.7</PluginVersion>
+    <PluginVersion>0.0.2.8</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -37,6 +37,7 @@
   </Target>
 
   <ItemGroup>
+    <PackageReference Include="PeNet" Version="4.1.0" />
     <Reference Include="Dalamud">
       <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
       <Private>False</Private>
@@ -61,9 +62,13 @@
       <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Iced">
+      <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
 
-    <PackageReference Include="DalamudPackager" Version="2.1.13" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
+    <PackageReference Include="DalamudPackager" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.7" />
   </ItemGroup>
 
   <ItemGroup>

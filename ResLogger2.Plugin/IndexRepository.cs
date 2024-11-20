@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -107,7 +107,7 @@ public class IndexRepository
         }
         catch (Exception e)
         {
-            DalamudApi.PluginLog.Error(e, "An error occurred in ResLogger2.");
+            DalamudApi.PluginLog.Error(e, $"An error occurred in ResLogger2 for gamePath: '{gamePath}'");
         }
 
         return default;

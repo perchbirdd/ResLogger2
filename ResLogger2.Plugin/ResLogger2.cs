@@ -8,6 +8,7 @@ using Dalamud.Hooking;
 using Dalamud.Interface.Windowing;
 using ResLogger2.Common;
 using ResLogger2.Plugin.Database;
+using ResLogger2.Plugin.PapHandling;
 using ResLogger2.Plugin.Windows;
 
 namespace ResLogger2.Plugin;
@@ -28,6 +29,8 @@ public class ResLogger2 : IDalamudPlugin
     private delegate IntPtr GetResourceAsyncPrototype(IntPtr manager, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6, byte a7);
     private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook;
     private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook;
+
+    private PapHandler _papHandler;
     
     private int _hookHits;
 
@@ -80,6 +83,8 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
         _getResourceAsyncHook.Enable();
         _getResourceSyncHook.Enable();
+
+        _papHandler = new PapHandler(ProcessHook);
     }
 
     private IntPtr GetResourceSyncDetour(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6)
@@ -96,7 +101,7 @@ public class ResLogger2 : IDalamudPlugin
         return ret;    
     }
 
-    private void ProcessHook(IntPtr pPath, HookType type)
+    public void ProcessHook(IntPtr pPath, HookType type)
     {
         _hookHits++;
         try
@@ -132,6 +137,7 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceSyncHook?.Dispose();
         _getResourceAsyncHook?.Disable();
         _getResourceAsyncHook?.Dispose();
+        _papHandler?.Dispose();
         Api.Dispose();
         StatsWindow?.Dispose();
         Uploader?.Dispose();

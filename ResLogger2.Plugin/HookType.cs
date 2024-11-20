@@ -4,5 +4,6 @@ public enum HookType
 {
     None,
     Sync,
-    Async
+    Async,
+    Unknown,
 }
