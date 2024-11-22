@@ -23,7 +23,7 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          dotnet build --no-restore --configuration Release --nologo --project ResLogger2.Plugin/ResLogger2.Plugin.csproj
+          dotnet build --no-restore --configuration Release --nologo
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
         with:
