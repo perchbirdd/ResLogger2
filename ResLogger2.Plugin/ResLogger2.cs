@@ -84,7 +84,7 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceAsyncHook.Enable();
         _getResourceSyncHook.Enable();
 
-        _papHandler = new PapHandler(ProcessHook);
+        // _papHandler = new PapHandler(ProcessHook);
     }
 
     private IntPtr GetResourceSyncDetour(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6)
