@@ -414,7 +414,13 @@ public class LogWindow : Window
         ImGui.TextUnformatted(folderText);
         ImGui.TextUnformatted(fullText);
         ImGui.PopStyleColor();
-        ImGui.TextUnformatted("Right click to copy to clipboard.");
+        ImGui.TextUnformatted("Left click to copy game path to clipboard.");
+        ImGui.TextUnformatted("Right click to copy full data to clipboard.");
+        if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            var toCopy = $"{info.FullText}";
+            ImGui.SetClipboardText(toCopy);
+        }
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
         {
             var toCopy = $"{fileText}\n{folderText}\n{fullText}";
