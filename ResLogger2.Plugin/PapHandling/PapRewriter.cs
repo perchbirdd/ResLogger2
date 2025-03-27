@@ -13,10 +13,10 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 {
     public unsafe delegate int PapResourceHandlerPrototype(void* self, byte* path, int length);
 
-    private readonly PeSigScanner                              _scanner          = new();
-    private readonly Dictionary<nint, AsmHook>                 _hooks            = [];
+    private readonly PeSigScanner _scanner = new();
+    private readonly Dictionary<nint, AsmHook> _hooks = [];
     private readonly Dictionary<(nint, Register, ulong), nint> _nativeAllocPaths = [];
-    private readonly List<nint>                                _nativeAllocCaves = [];
+    private readonly List<nint> _nativeAllocCaves = [];
 
     public void Rewrite(string sig, string name)
     {
@@ -24,7 +24,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
             throw new Exception($"Signature for {name} [{sig}] could not be found.");
 
         var funcInstructions = _scanner.GetFunctionInstructions(address).ToArray();
-        var hookPoints       = ScanPapHookPoints(funcInstructions).ToList();
+        var hookPoints = ScanPapHookPoints(funcInstructions).ToList();
 
         foreach (var hookPoint in hookPoints)
         {
@@ -48,9 +48,9 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
             foreach (var hp in hookPoints)
                 stackAccesses.RemoveAll(instr => instr.IP == hp.IP);
 
-            var detourPointer  = Marshal.GetFunctionPointerForDelegate(papResourceHandler);
+            var detourPointer = Marshal.GetFunctionPointerForDelegate(papResourceHandler);
             var targetRegister = hookPoint.Op0Register.ToString().ToLower();
-            var hookAddress    = new IntPtr((long)detourPoint.IP);
+            var hookAddress = new IntPtr((long)detourPoint.IP);
 
             var caveAllocation = NativeAllocCave(16);
             var hook = new AsmHook(
@@ -68,7 +68,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 
                     // We can use 'rax' here too since it's also volatile, and it'll be overwritten by Crc32()'s return anyway
                     $"mov rax, 0x{detourPointer:x8}", // Get a pointer to our detour in place
-                    "call rax",                       // Call detour
+                    "call rax", // Call detour
 
                     // Do the reverse process and retrieve the stored stuff
                     $"mov r9, 0x{caveAllocation:x8}",
@@ -112,14 +112,15 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
         }
     }
 
-    private static IEnumerable<Instruction> ScanStackAccesses(IEnumerable<Instruction> instructions, Instruction hookPoint)
+    private static IEnumerable<Instruction> ScanStackAccesses(IEnumerable<Instruction> instructions,
+        Instruction hookPoint)
     {
         return instructions.Where(instr =>
                 instr.Code == hookPoint.Code
-             && instr.Op0Kind == hookPoint.Op0Kind
-             && instr.Op1Kind == hookPoint.Op1Kind
-             && instr.MemoryBase == hookPoint.MemoryBase
-             && instr.MemoryDisplacement64 == hookPoint.MemoryDisplacement64)
+                && instr.Op0Kind == hookPoint.Op0Kind
+                && instr.Op1Kind == hookPoint.Op1Kind
+                && instr.MemoryBase == hookPoint.MemoryBase
+                && instr.MemoryDisplacement64 == hookPoint.MemoryDisplacement64)
             .GroupBy(instr => instr.IP)
             .Select(grp => grp.First());
     }
@@ -132,12 +133,12 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
         {
             if (funcInstructions.AsSpan(i, 8) is
                 [
-                    { Code    : Code.Lea_r64_m },
-                    { Code    : Code.Lea_r64_m },
+                    { Code : Code.Lea_r64_m },
+                    { Code : Code.Lea_r64_m },
                     { Mnemonic: Mnemonic.Call },
-                    { Code    : Code.Lea_r64_m },
+                    { Code : Code.Lea_r64_m },
                     { Mnemonic: Mnemonic.Call },
-                    { Code    : Code.Lea_r64_m },
+                    { Code : Code.Lea_r64_m },
                     ..,
                 ]
                )
@@ -166,7 +167,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
             mem = (nint)NativeMemory.Alloc(size);
             _nativeAllocPaths.Add((funcAddress, stackRegister, stackDisplacement), mem);
         }
-            
+
         return mem;
     }
 

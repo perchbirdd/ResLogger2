@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Dalamud.NET.Sdk/12.0.2">
   <PropertyGroup>
-    <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     <PluginVersion>0.0.2.9</PluginVersion>
   </PropertyGroup>
   
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Platforms>x64</Platforms>
     <Company>perchbird</Company>
     <AssemblyTitle>ResLogger2.Plugin</AssemblyTitle>
     <Product>ResLogger2.Plugin</Product>
@@ -35,39 +32,13 @@
     <RemoveDir Directories="$(TargetDir)runtimes/alpine-x64/;$(TargetDir)runtimes/linux-arm/;$(TargetDir)runtimes/linux-arm64/;$(TargetDir)runtimes/linux-armel/;$(TargetDir)runtimes/linux-mips64/;$(TargetDir)runtimes/linux-musl-x64/;$(TargetDir)runtimes/linux-s390x/;$(TargetDir)runtimes/linux-x64/;$(TargetDir)runtimes/linux-x86/;$(TargetDir)runtimes/osx-arm64/;$(TargetDir)runtimes/osx-x64/;$(TargetDir)runtimes/win-arm/;$(TargetDir)runtimes/win-arm64/;$(TargetDir)runtimes/win-x86/;$(TargetDir)runtimes/alpine-arm/;$(TargetDir)runtimes/alpine-arm64/;$(TargetDir)runtimes/browser-wasm/;$(TargetDir)runtimes/browser;$(TargetDir)runtimes/linux-musl-arm/;$(TargetDir)runtimes/linux-musl-arm64/;$(TargetDir)runtimes/maccatalyst-arm64/;$(TargetDir)runtimes/maccatalyst-x64/;" />
     <Delete Files="$(TargetDir)Microsoft.EntityFrameworkCore.Abstractions.dll;$(TargetDir)Microsoft.EntityFrameworkCore.dll;$(TargetDir)Microsoft.EntityFrameworkCore.Relational.dll;$(TargetDir)Microsoft.EntityFrameworkCore.Sqlite.dll;$(TargetDir)Microsoft.Extensions.Caching.Abstractions.dll;$(TargetDir)Microsoft.Extensions.Caching.Memory.dll;$(TargetDir)Microsoft.Extensions.Configuration.Abstractions.dll;$(TargetDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll;$(TargetDir)Microsoft.Extensions.DependencyInjection.dll;$(TargetDir)Microsoft.Extensions.DependencyModel.dll;$(TargetDir)Microsoft.Extensions.Logging.Abstractions.dll;$(TargetDir)Microsoft.Extensions.Logging.dll;$(TargetDir)Microsoft.Extensions.Options.dll;$(TargetDir)Microsoft.Extensions.Primitives.dll;$(TargetDir)Newtonsoft.Json.dll;$(TargetDir)Npgsql.dll;$(TargetDir)Npgsql.EntityFrameworkCore.PostgreSQL.dll;$(TargetDir)ZiPatchLib.dll" />
   </Target>
-
+  
   <ItemGroup>
-    <PackageReference Include="PeNet" Version="4.1.0" />
-    <Reference Include="Dalamud">
-      <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="FFXIVClientStructs">
-      <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ImGui.NET">
-      <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="ImGuiScene">
-      <HintPath>$(DalamudLibPath)ImGuiScene.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Lumina">
-      <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Lumina.Excel">
-      <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Iced">
       <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
       <Private>False</Private>
     </Reference>
-
-    <PackageReference Include="DalamudPackager" Version="11.0.0" />
+    <PackageReference Include="PeNet" Version="4.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.7" />
   </ItemGroup>
 

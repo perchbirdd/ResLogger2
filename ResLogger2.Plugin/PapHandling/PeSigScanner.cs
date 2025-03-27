@@ -14,7 +14,7 @@ namespace ResLogger2.Plugin.PapHandling;
 // A good chunk of this was blatantly stolen from Dalamud's SigScanner 'cause Winter could not be faffed, Winter will definitely not rewrite it later
 public unsafe class PeSigScanner : IDisposable
 {
-    private readonly MemoryMappedFile         _file;
+    private readonly MemoryMappedFile _file;
     private readonly MemoryMappedViewAccessor _textSection;
 
     private readonly nint _moduleBaseAddress;
@@ -23,7 +23,7 @@ public unsafe class PeSigScanner : IDisposable
     public PeSigScanner()
     {
         var mainModule = Process.GetCurrentProcess().MainModule!;
-        var fileName   = mainModule.FileName;
+        var fileName = mainModule.FileName;
         _moduleBaseAddress = mainModule.BaseAddress;
 
         if (fileName == null)
@@ -32,12 +32,12 @@ public unsafe class PeSigScanner : IDisposable
         _file = MemoryMappedFile.CreateFromFile(fileName, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
 
         using var fileStream = _file.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
-        var       pe         = new PeFile(fileStream);
+        var pe = new PeFile(fileStream);
 
         var textSection = pe.ImageSectionHeaders!.First(header => header.Name == ".text");
 
         var textSectionStart = textSection.PointerToRawData;
-        var textSectionSize  = textSection.SizeOfRawData;
+        var textSectionSize = textSection.SizeOfRawData;
         _textSectionVirtualAddress = textSection.VirtualAddress;
 
         _textSection = _file.CreateViewAccessor(textSectionStart, textSectionSize, MemoryMappedFileAccess.Read);
@@ -91,20 +91,20 @@ public unsafe class PeSigScanner : IDisposable
             throw new ArgumentException("Signature without whitespaces must be divisible by two.", nameof(signature));
 
         var needleLength = signature.Length / 2;
-        var needle       = new byte[needleLength];
-        var mask         = new bool[needleLength];
+        var needle = new byte[needleLength];
+        var mask = new bool[needleLength];
         for (var i = 0; i < needleLength; i++)
         {
             var hexString = signature.Substring(i * 2, 2);
             if (hexString is "??" or "**")
             {
                 needle[i] = 0;
-                mask[i]   = true;
+                mask[i] = true;
                 continue;
             }
 
             needle[i] = byte.Parse(hexString, NumberStyles.AllowHexSpecifier);
-            mask[i]   = false;
+            mask[i] = false;
         }
 
         return (needle, mask);
@@ -115,9 +115,9 @@ public unsafe class PeSigScanner : IDisposable
         if (needle.Length > section.Capacity)
             return -1;
 
-        var badShift  = BuildBadCharTable(needle, mask);
-        var last      = needle.Length - 1;
-        var offset    = 0;
+        var badShift = BuildBadCharTable(needle, mask);
+        var last = needle.Length - 1;
+        var offset = 0;
         var maxOffset = section.Capacity - needle.Length;
 
         byte* buffer = null;
@@ -148,10 +148,11 @@ public unsafe class PeSigScanner : IDisposable
     private static int[] BuildBadCharTable(byte[] needle, bool[] mask)
     {
         int idx;
-        var last     = needle.Length - 1;
+        var last = needle.Length - 1;
         var badShift = new int[256];
         for (idx = last; idx > 0 && !mask[idx]; --idx)
-        { }
+        {
+        }
 
         var diff = last - idx;
         if (diff == 0)
@@ -171,7 +172,7 @@ public unsafe class PeSigScanner : IDisposable
         var fileOffset = address - _textSectionVirtualAddress - _moduleBaseAddress;
 
         var codeReader = new MappedCodeReader(_textSection, fileOffset);
-        var decoder    = Decoder.Create(64, codeReader, (ulong)address.ToInt64());
+        var decoder = Decoder.Create(64, codeReader, (ulong)address.ToInt64());
 
         do
         {
@@ -202,4 +203,3 @@ public class MappedCodeReader(UnmanagedMemoryAccessor data, long offset) : CodeR
         return data.ReadByte(offset++);
     }
 }
-
