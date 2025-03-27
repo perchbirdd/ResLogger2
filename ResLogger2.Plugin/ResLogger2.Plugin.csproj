@@ -38,8 +38,8 @@
       <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <PackageReference Include="PeNet" Version="4.1.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.7" />
+    <PackageReference Include="PeNet" Version="4.1.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>
