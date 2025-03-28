@@ -88,8 +88,6 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceSyncHook.Enable();
         
         var list = DalamudApi.PluginInterface.InstalledPlugins.Where(plugin => plugin.IsLoaded).ToList();
-        var str = string.Join(", ", list.Select(plugin => plugin.Name));
-        DalamudApi.PluginLog.Verbose($"ActivePlugins: {str}");
 
         if (list.All(p => p.Name != "Penumbra"))
         {
