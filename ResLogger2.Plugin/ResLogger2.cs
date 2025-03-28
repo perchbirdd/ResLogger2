@@ -2,12 +2,14 @@
 using Dalamud.Plugin;
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Hooking;
 using Dalamud.Interface.Windowing;
 using ResLogger2.Common;
 using ResLogger2.Plugin.Database;
+using ResLogger2.Plugin.IPC;
 using ResLogger2.Plugin.PapHandling;
 using ResLogger2.Plugin.Windows;
 
@@ -30,7 +32,8 @@ public class ResLogger2 : IDalamudPlugin
     private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook;
     private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook;
 
-    private PapHandler _papHandler;
+    private readonly PapHandler _papHandler;
+    private readonly PenumbraIpcHandler _penumbraIpcHandler;
     
     private int _hookHits;
 
@@ -75,7 +78,7 @@ public class ResLogger2 : IDalamudPlugin
         ResLogWindows.AddWindow(LogWindow);
         ResLogWindows.AddWindow(StatsWindow);
         
-        DalamudApi.PluginInterface.UiBuilder.Draw += () => ResLogWindows.Draw();
+        DalamudApi.PluginInterface.UiBuilder.Draw += ResLogWindows.Draw;
         
         var getResourceAsync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B 5C 24 ?? 48 83 C4 68");
         var getResourceSync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B D8 8B C7");
@@ -83,8 +86,21 @@ public class ResLogger2 : IDalamudPlugin
         _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
         _getResourceAsyncHook.Enable();
         _getResourceSyncHook.Enable();
+        
+        var list = DalamudApi.PluginInterface.InstalledPlugins.Where(plugin => plugin.IsLoaded).ToList();
+        var str = string.Join(", ", list.Select(plugin => plugin.Name));
+        DalamudApi.PluginLog.Verbose($"ActivePlugins: {str}");
 
-        // _papHandler = new PapHandler(ProcessHook);
+        if (list.All(p => p.Name != "Penumbra"))
+        {
+            DalamudApi.PluginLog.Verbose("Penumbra not found, enabling PapHandler.");
+            _papHandler = new PapHandler(ProcessHook);
+            _penumbraIpcHandler = new PenumbraIpcHandler(_papHandler);
+        }
+        else
+        {
+            DalamudApi.PluginLog.Verbose("Penumbra detected, so not enabling PapHandler.");
+        }
     }
 
     private IntPtr GetResourceSyncDetour(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6)

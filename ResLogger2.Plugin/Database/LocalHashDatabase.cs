@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -252,21 +252,14 @@ public class LocalHashDatabase
 
 			using (var cmd = _connection.CreateCommand())
 			{
-				cmd.CommandText = @"UPDATE Paths SET Uploaded = 1 WHERE FullHash = @FullHash AND IndexId = @IndexId AND FolderHash = @FolderHash AND FileHash = @FileHash";
-				cmd.Parameters.Add(new SqliteParameter("@IndexId", SqliteType.Integer));
-				cmd.Parameters.Add(new SqliteParameter("@FolderHash", SqliteType.Integer));
-				cmd.Parameters.Add(new SqliteParameter("@FileHash", SqliteType.Integer));
-				cmd.Parameters.Add(new SqliteParameter("@FullHash", SqliteType.Integer));
-				
+				cmd.CommandText = @"UPDATE Paths SET Uploaded = 1 WHERE Path = @Path";
+				cmd.Parameters.Add(new SqliteParameter("@Path", SqliteType.Text));
+
+				var affectedRowCount = 0;
 				foreach (var fullPath in data.Entries)
 				{
-					var indexId = Utils.GetCategoryIdForPath(fullPath);
-					var (folderHash, fileHash, fullHash) = Utils.CalcAllHashes(fullPath);
-					cmd.Parameters["@IndexId"].Value = indexId;
-					cmd.Parameters["@FolderHash"].Value = folderHash;
-					cmd.Parameters["@FileHash"].Value = fileHash;
-					cmd.Parameters["@FullHash"].Value = fullHash;
-					cmd.ExecuteNonQuery();
+					cmd.Parameters["@Path"].Value = fullPath;
+					affectedRowCount += cmd.ExecuteNonQuery();
 				}
 			}
 			

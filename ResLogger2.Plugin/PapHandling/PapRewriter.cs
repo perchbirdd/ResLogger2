@@ -17,6 +17,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
     private readonly Dictionary<nint, AsmHook> _hooks = [];
     private readonly Dictionary<(nint, Register, ulong), nint> _nativeAllocPaths = [];
     private readonly List<nint> _nativeAllocCaves = [];
+    private bool _disposed;
 
     public void Rewrite(string sig, string name)
     {
@@ -176,6 +177,13 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+        
+        _disposed = true;
+        
         _scanner.Dispose();
 
         foreach (var hook in _hooks.Values)
@@ -215,6 +223,6 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
     private static unsafe void WriteToAlloc(nint alloc, int size, string name)
     {
         var span = new Span<byte>((void*)alloc, size);
-        Utf8.TryWrite(span, $"Penumbra.{name}\0", out _);
+        Utf8.TryWrite(span, $"ResLogger2.{name}\0", out _);
     }
 }
