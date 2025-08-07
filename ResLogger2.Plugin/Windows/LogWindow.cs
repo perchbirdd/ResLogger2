@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Dalamud.Interface;
@@ -11,7 +12,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using ResLogger2.Common;
 
 namespace ResLogger2.Plugin.Windows;
@@ -31,6 +32,7 @@ public class LogWindow : Window
     private bool _isFiltered;
 
     private readonly FileDialogManager _fileDialogManager = new();
+    private ImGuiListClipperPtr _clipper;
     private bool _isImporting;
 
     private readonly ResLogger2 _plugin;
@@ -46,13 +48,18 @@ public class LogWindow : Window
         }
     }
 
-    public LogWindow(ResLogger2 plugin) : base("ResLogger2", ImGuiWindowFlags.MenuBar)
+    public unsafe LogWindow(ResLogger2 plugin) : base("ResLogger2", ImGuiWindowFlags.MenuBar)
     {
         _plugin = plugin;
 
         Size = new Vector2(500, 400);
         SizeCondition = ImGuiCond.FirstUseEver;
         RespectCloseHotkey = false;
+        
+        var clipperNative = Marshal.AllocHGlobal(Marshal.SizeOf<ImGuiListClipper>());
+        var clipper = new ImGuiListClipper();
+        Marshal.StructureToPtr(clipper, clipperNative, false);
+        _clipper = new ImGuiListClipperPtr((ImGuiListClipper*)clipperNative.ToPointer());
     }
 
     private void Clear()
@@ -329,13 +336,7 @@ public class LogWindow : Window
         ImGui.BeginChild("scrolling", new Vector2(0, -1), false, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-
-        ImGuiListClipperPtr clipper;
-        unsafe
-        {
-            clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
-        }
-
+        
         ImGui.PushFont(UiBuilder.MonoFont);
 
         var childPos = ImGui.GetWindowPos();
@@ -347,11 +348,11 @@ public class LogWindow : Window
         lock (_renderLock)
         {
             var e = Source.ToList();
-            clipper.Begin(e.Count);
+            _clipper.Begin(e.Count);
 
-            while (clipper.Step())
+            while (_clipper.Step())
             {
-                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                for (var i = _clipper.DisplayStart; i < _clipper.DisplayEnd; i++)
                 {
                     var hash = e[i];
                     if (!_entries.TryGetValue(hash, out var line))
@@ -381,7 +382,7 @@ public class LogWindow : Window
                 }
             }
 
-            clipper.End();
+            _clipper.End();
         }
 
         ImGui.PopFont();
