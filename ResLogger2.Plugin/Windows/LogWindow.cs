@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -184,6 +185,7 @@ public class LogWindow : Window
                 var openAtStartup = _plugin.Configuration.OpenAtStartup;
                 var hashTooltip = _plugin.Configuration.HashTooltip;
                 var logNonexistent = _plugin.Configuration.LogNonexistentPaths;
+                var usingRegex = _plugin.Configuration.UsingRegex;
 
                 if (ImGui.MenuItem("Upload paths", "", ref upload))
                 {
@@ -191,6 +193,11 @@ public class LogWindow : Window
                     _plugin.Configuration.Save();
                 }
 
+                if (ImGui.MenuItem("Use Regex", "", ref usingRegex))
+                {
+                    _plugin.Configuration.UsingRegex = usingRegex;
+                    _plugin.Configuration.Save();
+                }
                 if (ImGui.MenuItem("Auto-scroll", "", ref autoScroll))
                 {
                     _plugin.Configuration.AutoScroll = autoScroll;
@@ -471,8 +478,14 @@ public class LogWindow : Window
         if (!_plugin.Configuration.LogNonexistentPaths && !entry.Info.Exists)
             return false;
 
-        if (!string.IsNullOrEmpty(_textFilter) && !entry.Info.FullText.Contains(_textFilter))
-            return false;
+        if (!_plugin.Configuration.UsingRegex)
+        {
+            if (!string.IsNullOrEmpty(_textFilter) && !entry.Info.FullText.Contains(_textFilter))
+                return false;
+        }
+        else
+            if(!string.IsNullOrEmpty(_textFilter) && !Regex.IsMatch(entry.Info.FullText, _textFilter))
+                return false;
 
         return true;
     }
