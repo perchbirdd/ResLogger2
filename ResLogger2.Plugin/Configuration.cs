@@ -15,6 +15,8 @@ public class Configuration : IPluginConfiguration
     public bool OnlyDisplayUnique { get; set; }
     public bool HashTooltip { get; set; } = true;
     public bool LogNonexistentPaths { get; set; } = true;
+    
+    public bool UsingRegex { get; set; } 
 
     [NonSerialized]
     private IDalamudPluginInterface _pluginInterface;
