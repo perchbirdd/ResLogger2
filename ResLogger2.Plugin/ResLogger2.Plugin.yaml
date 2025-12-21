@@ -11,11 +11,4 @@ description: |-
 punchline: A path logger with optional crowdsourcing functionality. 
 repo_url: https://github.com/perchbirdd/reslogger2
 changelog: |-
-  Complete web server rework and increased reliability in the plugin.
-  - [Web only] Reworked the web server to further prevent hash collisions and include information from old game versions more accurately
-  - [Web only] Added new methods of obtaining crowdsourced path data from the web server.
-  - Reworked the database in the plugin to further prevent hash collisions.
-  - Added a stats window to the plugin, showcasing path progress for the current game version and the total amount of paths found.
-  - Added a new command to open the stats window.
-  - Added a new command to perform XIV's crc32 on a given string.
-  - Added a new tooltip to the path list window, showing the path's hashes.
+  New feature! Filtering paths using Regex by @karou
