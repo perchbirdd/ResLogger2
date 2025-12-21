@@ -43,6 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ResLogger2.Common\ResLogger2.Common.csproj" />
+    <ProjectReference Include="..\deps\ResLogger2.Common\src\ResLogger2.Common.csproj" />
   </ItemGroup>
 </Project>

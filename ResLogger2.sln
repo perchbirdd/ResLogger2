@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.Plugin", "ResLogger2.Plugin\ResLogger2.Plugin.csproj", "{13C812E9-0D42-4B95-8646-40EEBF30636F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.Common", "ResLogger2.Common\ResLogger2.Common.csproj", "{40ED0CF8-204A-4E35-AE5B-EED75E27722B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResLogger2.Common", "deps\ResLogger2.Common\src\ResLogger2.Common.csproj", "{6D66E734-BD42-4D54-8C8E-65A42B9DE27B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Debug|x64.Build.0 = Debug|x64
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.ActiveCfg = Release|x64
 		{13C812E9-0D42-4B95-8646-40EEBF30636F}.Release|x64.Build.0 = Release|x64
-		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Debug|x64.Build.0 = Debug|Any CPU
-		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Release|x64.ActiveCfg = Release|Any CPU
-		{40ED0CF8-204A-4E35-AE5B-EED75E27722B}.Release|x64.Build.0 = Release|Any CPU
+		{6D66E734-BD42-4D54-8C8E-65A42B9DE27B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6D66E734-BD42-4D54-8C8E-65A42B9DE27B}.Debug|x64.Build.0 = Debug|Any CPU
+		{6D66E734-BD42-4D54-8C8E-65A42B9DE27B}.Release|x64.ActiveCfg = Release|Any CPU
+		{6D66E734-BD42-4D54-8C8E-65A42B9DE27B}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,3 @@
+[submodule "deps/ResLogger2.Common"]
+	path = deps/ResLogger2.Common
+	url = https://github.com/perchbirdd/ResLogger2.Common
