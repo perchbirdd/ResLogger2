@@ -1,4 +1,5 @@
 ﻿using System;
+using InteropGenerator.Runtime;
 
 // This namespace is taken almost directly from Penumbra
 namespace ResLogger2.Plugin.PapHandling;
@@ -13,9 +14,9 @@ public sealed class PapHandler : IDisposable
     public const string LoadMigratoryMotionPack = "E9 ?? ?? ?? 00 8B 84 24 ?? ?? 00 00 48 8D";
 
     private readonly PapRewriter _rewriter;
-    private readonly Action<IntPtr, HookType> _processHook;
+    private readonly Action<CStringPointer, HookType> _processHook;
     
-    public unsafe PapHandler(Action<IntPtr, HookType> processHook)
+    public unsafe PapHandler(Action<CStringPointer, HookType> processHook)
     {
         _processHook = processHook;
         _rewriter = new PapRewriter(PapResourceHandler);
@@ -36,9 +37,9 @@ public sealed class PapHandler : IDisposable
     
     public void Dispose() => _rewriter.Dispose();
 
-    private unsafe int PapResourceHandler(void* self, byte* path, int length)
+    private unsafe int PapResourceHandler(void* self, CStringPointer path, int length)
     {
-        _processHook.Invoke((IntPtr)path, HookType.Unknown);
+        _processHook.Invoke(path, HookType.Unknown);
         return length;
     }
 }

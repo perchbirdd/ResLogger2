@@ -7,13 +7,14 @@ using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
+using InteropGenerator.Runtime;
 using static Iced.Intel.AssemblerRegisters;
 
 namespace ResLogger2.Plugin.PapHandling;
 
 public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResourceHandler) : IDisposable
 {
-    public unsafe delegate int PapResourceHandlerPrototype(void* self, byte* path, int length);
+    public unsafe delegate int PapResourceHandlerPrototype(void* self, CStringPointer path, int length);
 
     private readonly PeSigScanner _scanner = new();
     private readonly Dictionary<nint, AsmHook> _hooks = [];
