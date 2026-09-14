@@ -12,10 +12,13 @@ using ResLogger2.Plugin.Database;
 using ResLogger2.Plugin.IPC;
 using ResLogger2.Plugin.PapHandling;
 using ResLogger2.Plugin.Windows;
+using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using InteropGenerator.Runtime;
 
 namespace ResLogger2.Plugin;
 
-public class ResLogger2 : IDalamudPlugin
+public unsafe class ResLogger2 : IDalamudPlugin
 {
     public string Name => "ResLogger2.Plugin";
     
@@ -26,11 +29,9 @@ public class ResLogger2 : IDalamudPlugin
 
     private const string CommandName = "/reslog";
     private const int HookHitsTillCommit = 10000;
-        
-    private delegate IntPtr GetResourceSyncPrototype(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6);
-    private delegate IntPtr GetResourceAsyncPrototype(IntPtr manager, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6, byte a7);
-    private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook;
-    private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook;
+
+    private readonly Hook<ResourceManager.Delegates.GetResourceSync> _getResourceSyncHook;
+    private readonly Hook<ResourceManager.Delegates.GetResourceAsync> _getResourceAsyncHook;
 
     private readonly PapHandler _papHandler;
     private readonly PenumbraIpcHandler _penumbraIpcHandler;
@@ -79,13 +80,17 @@ public class ResLogger2 : IDalamudPlugin
         ResLogWindows.AddWindow(StatsWindow);
         
         DalamudApi.PluginInterface.UiBuilder.Draw += ResLogWindows.Draw;
-        
-        var getResourceAsync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B 5C 24 ?? 48 83 C4 68");
-        var getResourceSync = DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 49 89 04 0E");
-        _getResourceAsyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceAsyncPrototype>(getResourceAsync, GetResourceAsyncDetour);
-        _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<GetResourceSyncPrototype>(getResourceSync, GetResourceSyncDetour);
-        _getResourceAsyncHook.Enable();
+
+        _getResourceSyncHook = DalamudApi.Hooks.HookFromAddress<ResourceManager.Delegates.GetResourceSync>(
+            (nint)ResourceManager.MemberFunctionPointers.GetResourceSync,
+            GetResourceSyncDetour);
+
+        _getResourceAsyncHook = DalamudApi.Hooks.HookFromAddress<ResourceManager.Delegates.GetResourceAsync>(
+            (nint)ResourceManager.MemberFunctionPointers.GetResourceAsync,
+            GetResourceAsyncDetour);
+
         _getResourceSyncHook.Enable();
+        _getResourceAsyncHook.Enable();
         
         var list = DalamudApi.PluginInterface.InstalledPlugins.Where(plugin => plugin.IsLoaded).ToList();
 
@@ -101,27 +106,27 @@ public class ResLogger2 : IDalamudPlugin
         }
     }
 
-    private IntPtr GetResourceSyncDetour(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6)
+    private ResourceHandle* GetResourceSyncDetour(ResourceManager* thisPtr, ResourceCategory* category, uint* type, uint* hash, CStringPointer path, void* unknown, void* unkDebugPtr, uint unkDebugInt)
     {
-        var ret = _getResourceSyncHook.Original(a1, a2, a3, a4, pPath, a6);
-        ProcessHook(pPath, HookType.Sync);
-        return ret; 
+        var ret = _getResourceSyncHook.Original(thisPtr, category, type, hash, path, unknown, unkDebugPtr, unkDebugInt);
+        ProcessHook(path, HookType.Sync);
+        return ret;
     }
 
-    private IntPtr GetResourceAsyncDetour(IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, IntPtr pPath, IntPtr a6, byte a7)
+    private ResourceHandle* GetResourceAsyncDetour(ResourceManager* thisPtr, ResourceCategory* category, uint* type, uint* hash, CStringPointer path, void* unknown, bool isUnknown, void* unkDebugPtr, uint unkDebugInt)
     {
-        var ret = _getResourceAsyncHook.Original(a1, a2, a3, a4, pPath, a6, a7);
-        ProcessHook(pPath, HookType.Async);
-        return ret;    
+        var ret = _getResourceAsyncHook.Original(thisPtr, category, type, hash, path, unknown, isUnknown, unkDebugPtr, unkDebugInt);
+        ProcessHook(path, HookType.Async);
+        return ret;
     }
 
-    public void ProcessHook(IntPtr pPath, HookType type)
+    public void ProcessHook(CStringPointer pPath, HookType type)
     {
         _hookHits++;
         try
         {
-            if (pPath == IntPtr.Zero) return;
-            var path = Marshal.PtrToStringAnsi(pPath);
+            if (!pPath.HasValue) return;
+            var path = pPath.ToString();
             if (string.IsNullOrEmpty(path)) return;
             if (!IsAscii(path)) return;
 
