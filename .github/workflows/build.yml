@@ -10,11 +10,13 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v7
         with:
-          dotnet-version: '9.x.x'
+          submodules: recursive
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.x.x'
       - name: Restore dependencies
         run: dotnet restore
       - name: Download Dalamud
@@ -25,7 +27,7 @@ jobs:
         run: |
           dotnet build --no-restore --configuration Release --nologo
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           path: |
             ./ResLogger2.Plugin/bin/Release/ResLogger2.Plugin/*

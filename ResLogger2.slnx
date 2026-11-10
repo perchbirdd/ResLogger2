@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="deps/ResLogger2.Common/src/ResLogger2.Common.csproj" />
+  <Project Path="ResLogger2.Plugin/ResLogger2.Plugin.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>
